@@ -5,6 +5,8 @@ from PySide6.QtWidgets import *
 from ui_modules.responsive_context_menu import ResponsiveContextMenu
 from data_modules.gmd_parser import GMDParser
 from data_modules import unwrapper
+from data_modules.autosave_thread import AutoSaveThread
+from data_modules.book_master import BookMaster
 
 
 class BooklikeTextEdit(QTextEdit):
@@ -16,6 +18,8 @@ class BooklikeTextEdit(QTextEdit):
     context_btn = None
 
     FILEPATH = None
+
+    autosave:AutoSaveThread = None
 
     def __init__(self, master):
         super().__init__(master)
@@ -30,12 +34,16 @@ class BooklikeTextEdit(QTextEdit):
         self.block_format.setTextIndent(30)
 
 
-    def uploadFromFile(self, path:str, cursor_position:int = 0) -> None:    # load text to editor
+
+    def uploadFromFile(self, path:str, bookmaster:BookMaster, cursor_position:int = 0) -> None:    # load text to editor
         #: this funtion expects to be given a valid path for a GMD file and does not have 
         #: safeguards in place for dealing with invalid files
         #
         #: in the future i plan to implement an encoding verification step, but for now it 
         #: assumes it is using utf-8
+        
+        # self.autosave.setBookmaster(bookmaster)
+        self.autosave.deactivate()    # deactivate the autosaves
 
         with open(path, encoding= 'utf-8', mode='r') as file:    # read the espective file
             body = file.read()
@@ -71,6 +79,9 @@ class BooklikeTextEdit(QTextEdit):
         self.setTextCursor(cursor)
 
         self.textChanged.connect(self.onTextChanged)    # reconnect the text changed signal
+
+        self.autosave.changeSplit(bookmaster.getCurrentSplit())    # set current split
+        self.autosave.activate()    # activate the autosave
 
 
     def onTextChanged(self) -> None:    # update the HTML in the paragraph
@@ -234,10 +245,3 @@ class BooklikeTextEdit(QTextEdit):
         else:
             self._tablet_mode = False
         self.setFocus()
-
-
-    def save(self):
-        text = self.gmd_parser.plaintext2gmd(self.toPlainText())
-        with open(r'split_001_output.txt', mode='w') as file:
-            file.write()
-        print(text)

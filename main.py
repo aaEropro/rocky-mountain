@@ -13,6 +13,8 @@ from ui_modules.book_navigation import BookNavigation
 from ui_modules.settings import SettingsWidget
 from functools import partial
 from addons import cutils
+from data_modules.autosave_thread import AutoSaveThread
+from ui_modules.status_bar import StatusBar
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class MainWindow(QMainWindow):
@@ -40,6 +42,7 @@ class MainWindow(QMainWindow):
         self.buttons_bar.move_to_next_chapter_btn.clicked.connect(lambda: self.laterLoad(self.next_split))
         self.widget1.layout().addWidget(self.buttons_bar)
 
+
         #: editor
         self.view = BooklikeTextEdit(self.widget1)
         self.widget1.layout().addWidget(self.view)
@@ -50,6 +53,18 @@ class MainWindow(QMainWindow):
         self.buttons_bar.toggle_readonly_btn.clicked.connect(lambda: self.view.toggleReadOnly(self.buttons_bar.toggle_readonly_btn))
         self.buttons_bar.toggle_context_help_btn.clicked.connect(lambda: self.view.toggleContextHelp(self.buttons_bar.toggle_context_help_btn))
         self.buttons_bar.toggle_tabletmode_btn.clicked.connect(lambda: self.view.toggleTabletMode(self.buttons_bar.toggle_tabletmode_btn))
+
+        import threading
+        print(threading.get_ident())
+
+        #: status bar
+        self.status_bar = StatusBar(self.widget1)
+        self.widget1.layout().addWidget(self.status_bar)
+
+        self.autosave_thread = AutoSaveThread(editor_instance=self.view)
+        self.autosave_thread.print_message_to_status_bar.connect(self.status_bar.showRightMessage)
+        self.autosave_thread.start()
+        self.view.autosave = self.autosave_thread
 
         self.setCentralWidget(self.stacked_widget)
         self.loadSetupData()
@@ -120,8 +135,10 @@ class MainWindow(QMainWindow):
         self.rmb_filename = Path(path).stem      # get the file's name
         self.bookmaster = BookMaster(path)    # initiate the bookmaster
         cursor_position, self.split_filename = self.bookmaster.getStartpoint()
-        self.view.uploadFromFile(os.path.join('temp', self.rmb_filename, self.split_filename), int(cursor_position))
+        self.bookmaster.setCurrentSplit(self.split_filename)    # update the bookmaster's cuurent split
+        self.view.uploadFromFile(path=os.path.join('temp', self.rmb_filename, self.split_filename), bookmaster=self.bookmaster, cursor_position=int(cursor_position))
         self.checkScrollPosition()    # force a check on the prev/next buttons
+        self.status_bar.showLeftMessage(self.split_filename, None)
         self.view.setFocus()
 
 
@@ -129,8 +146,10 @@ class MainWindow(QMainWindow):
         if self.bookmaster is not None:
             self.bookmaster.write(self.split_filename, self.view.toPlainText())    # force a save on the old split 
         self.split_filename = name    # update the split name
-        self.view.uploadFromFile(os.path.join('temp', self.rmb_filename, self.split_filename), cursor_pos)    # upload the text
+        self.bookmaster.setCurrentSplit(self.split_filename)    # update the bookmaster's cuurent split
+        self.view.uploadFromFile(path=os.path.join('temp', self.rmb_filename, self.split_filename), bookmaster=self.bookmaster, cursor_position=cursor_pos)    # upload the text
         self.checkScrollPosition()    # force a check on the prev/next buttons
+        self.status_bar.showLeftMessage(self.split_filename, None)
         self.view.setFocus()
 
 
