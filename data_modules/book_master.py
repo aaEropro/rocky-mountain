@@ -13,7 +13,7 @@ class BookMaster():
     path_to_book = None
     splits_order = None
 
-    ERROR = False
+    current_split = None
  
     def __init__(self, received_path_to_book:str) -> None:
         # : validate the file extension and extract it to a temp folder.
@@ -76,10 +76,6 @@ class BookMaster():
 
 
     def close(self, cursor:int = 0, split:str|None = None):
-        if self.ERROR:    # bypass the saving step in case of error
-            print('entered error-driven closing bypass')
-            return
-
         if not os.path.isdir(os.path.join('temp', self.rmb_file_filename)):
             raise FileNotFoundError(f'the extracted file {self.rmb_file_filename} not found in temp')
         
@@ -176,6 +172,14 @@ class BookMaster():
         self.split_not_present_in_order.remove(split_name)
         print(f'deleted split {split_name}')
 
+
+    def setCurrentSplit(self, split_name:str) -> None:
+        self.current_split = split_name
+
+    def getCurrentSplit(self, full_path = False) -> str:
+        if full_path:
+            return os.path.join('temp', self.rmb_file_filename, self.current_split)
+        return self.current_split
 
     def write(self, split_name:str, split_contents:str) -> None:
         split_contents = split_contents.replace('\n', '\n\n')
