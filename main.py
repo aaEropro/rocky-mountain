@@ -23,7 +23,6 @@ class MainWindow(QMainWindow):
     previous_split = None
     next_split = None
 
-    ### settings
     chapter_buttons_always_show = False
 
     def __init__(self):
