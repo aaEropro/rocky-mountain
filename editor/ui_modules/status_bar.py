@@ -45,9 +45,9 @@ class MessageLabelWithTimer(ElidedLabel):
         self.timer = QTimer(self)    # create the timer that will track the lifespan of the messages displayed
 
 
-    def changeHappened(self, coming_from_timeout:bool=False):
+    def changeHappened(self, timeout:bool=False):
         """ a change happened. it can be a new message has been added to queue, or a timer has expired. """
-        if coming_from_timeout:
+        if timeout:
             self.activ_timer_flag = False    # deactivate the flag
         
         if not self.activ_timer_flag:
@@ -56,17 +56,19 @@ class MessageLabelWithTimer(ElidedLabel):
                 self.showNextMessage()    # display the next message
 
 
-    def addMessageToQueue(self, message:str, timer:int|None):
+    def addMessageToQueue(self, message:str, timer:int|None, override:bool=False):
         """ add a mesage to the queue. it the timer is None, it creates a message with an inifnit lifespan. """
-        if not self.infinit_timer_flag:    # not inifnit timespan message displayed
+        if not self.infinit_timer_flag:    # not inifnit timespan message displayed or an override
             self.queue.append( (message, timer) )    # append the message to queue
             self.changeHappened()    # indicate a change happened
+        elif override:
+            self.queue.append( (message, timer) )    # append the message to queue
+            self.changeHappened(True)    # indicate a change happened
 
 
     def showNextMessage(self):
         """" displayes the next message in the queue. """
         message, timer = self.queue[0]    # unpack the first message
-        print(message, timer)
         self.setText(str(message))    # display the message
         if timer is not None:
             self.timer.singleShot(int(timer), lambda: self.changeHappened(True))    # start single shot timer
@@ -94,13 +96,13 @@ class StatusBar(QWidget):
 
         self.left_label = MessageLabelWithTimer(self)
         self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.left_label.setStyleSheet('''background:red''')
+        # self.left_label.setStyleSheet('''background:red''')
         self.center_label = MessageLabelWithTimer(self)
         self.center_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
-        self.center_label.setStyleSheet('''background:green''')
+        # self.center_label.setStyleSheet('''background:green''')
         self.right_label = MessageLabelWithTimer(self)
         self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.right_label.setStyleSheet('''background:blue''')
+        # self.right_label.setStyleSheet('''background:blue''')
 
         self.main_layout.addWidget(self.left_label)
         self.main_layout.addWidget(self.center_label)
@@ -109,14 +111,17 @@ class StatusBar(QWidget):
         self.setFixedHeight(25)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
 
-    @Slot(str, object)
-    def showLeftMessage(self, message:str, timer:int|None=5000):
-        self.left_label.addMessageToQueue(message, timer)
 
     @Slot(str, object)
-    def showCenterMessage(self, message:str, timer:int|None=5000):
-        self.center_label.addMessageToQueue(message, timer)
+    def showLeftMessage(self, message:str, timer:int|None=5000, override:bool=False):
+        self.left_label.addMessageToQueue(message, timer, override)
+
 
     @Slot(str, object)
-    def showRightMessage(self, message:str, timer:int|None=5000):
-        self.right_label.addMessageToQueue(message, timer)
+    def showCenterMessage(self, message:str, timer:int|None=5000, override:bool=False):
+        self.center_label.addMessageToQueue(message, timer, override)
+
+
+    @Slot(str, object)
+    def showRightMessage(self, message:str, timer:int|None=5000, override:bool=False):
+        self.right_label.addMessageToQueue(message, timer, override)

@@ -2,11 +2,11 @@
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
-from ui_modules.responsive_context_menu import ResponsiveContextMenu
-from data_modules.gmd_parser import GMDParser
-from data_modules import unwrapper
-from data_modules.autosave_thread import AutoSaveThread
-from data_modules.book_master import BookMaster
+from editor.ui_modules.responsive_context_menu import ResponsiveContextMenu
+from editor.data_modules.gmd_parser import GMDParser
+from editor.data_modules import unwrapper
+from editor.data_modules.autosave_thread import AutoSave
+from editor.data_modules.book_master import BookMaster
 
 
 class BooklikeTextEdit(QTextEdit):
@@ -19,13 +19,12 @@ class BooklikeTextEdit(QTextEdit):
 
     FILEPATH = None
 
-    autosave:AutoSaveThread = None
+    autosave:AutoSave = None
 
     def __init__(self, master):
         super().__init__(master)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents, True)    # set the flag to accept touch control
-        # self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)    # hide the scrollbar for book-like mode
         self.responsive_context_menu = ResponsiveContextMenu(self)    # initiate the responsive context menu
         self.viewport().installEventFilter(self)    # install event filter on textEdit viewport
         self.gmd_parser = GMDParser()    # initiate the GMD parser
@@ -42,7 +41,7 @@ class BooklikeTextEdit(QTextEdit):
         #: in the future i plan to implement an encoding verification step, but for now it 
         #: assumes it is using utf-8
         
-        # self.autosave.setBookmaster(bookmaster)
+        self.autosave.setBookmaster(bookmaster)
         self.autosave.deactivate()    # deactivate the autosaves
 
         with open(path, encoding= 'utf-8', mode='r') as file:    # read the espective file
