@@ -68,10 +68,13 @@ class BookMaster():
             else:
                 raise FileNotFoundError(f'the {file} file from order.ini does not exist')
         self.split_not_present_in_order = []
+        file_str = ''
         if len(all_split_files) > 0:
             for file in all_split_files:
                 self.split_not_present_in_order.append(file)
-                print(f'Warning: file {file} is not present in split order list. you should look into that.')
+                file_str += file + ', '
+        if len(self.split_not_present_in_order) > 0:
+            print(f'Warning: file(s) {file_str[:-2]} is not present in split order list. you should look into that.')
         self.split_order = files_existent_in_order    # load splits order to global memory
 
 
@@ -186,14 +189,4 @@ class BookMaster():
         with open(os.path.join('temp', self.rmb_file_filename, split_name), encoding='utf-8', mode='w') as file:
             file.write(split_contents)
             file.close()
-        
-
-if __name__ == '__main__':
-    instance = BookMaster(r'C:\Users\jovanniBoss\Desktop\test.rmb')
-    instance.close()
-    # print(instance.getStartpoint())
-    instance.write('split_001.gmd', 'hello!')
-    print(instance.getNextSplit('split_003.gmd'))
-    # instance.getNextSplit('split_001.gmd')
-
         

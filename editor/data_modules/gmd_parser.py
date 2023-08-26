@@ -3,7 +3,7 @@ import os
 
 class GMDParser():
     def __init__(self):
-        config = ConfigObj(os.path.join('setup_files', 'styles.ini'))
+        config = ConfigObj(os.path.join('editor', 'setup_files', 'styles.ini'))
         body_styles = config['body']
         tags_styles = config['tags']
         stag_styles = config['speech']
