@@ -32,16 +32,13 @@ class AutoSave(QObject):
         
         if self.bookmaster is None:
             self.print_message_to_status_bar.emit('Error: bookmaster not set!', None)
-            # print('emmited')
             return
         self.internal_timer.start(time_skip)
-        # print('activated timer')
 
 
     def deactivate(self) -> None:    # deactivates the timer
         """deactivates the internal timer."""
         self.internal_timer.stop()
-        # print('deactivated timer')
 
 
     def changeSplit(self, split_name:str) -> None:    # change the split

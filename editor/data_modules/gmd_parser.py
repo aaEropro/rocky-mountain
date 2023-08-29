@@ -51,11 +51,7 @@ class GMDParser():
             }
 
 
-    def parseDocument(self, body_text: str|None = None) -> str:
-        if body_text is None:
-            with open('body.txt', encoding = 'utf-8', mode = 'r') as file:
-                body_text = file.read()
-
+    def parseDocument(self, body_text: str) -> str:
         for item in [('&', '&amp;'), ('<', '&lt;'), ('>', '&gt;')]:     # replace HTML special characters with escape seq
             body_text = body_text.replace(item[0], item[1])
 
