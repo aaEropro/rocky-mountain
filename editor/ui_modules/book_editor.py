@@ -5,7 +5,7 @@ from PySide6.QtWidgets import *
 from editor.ui_modules.responsive_context_menu import ResponsiveContextMenu
 from editor.data_modules.gmd_parser import GMDParser
 from editor.data_modules import unwrapper
-from editor.data_modules.autosave_thread import AutoSave
+from editor.data_modules.autosave import AutoSave
 from editor.data_modules.book_master import BookMaster
 
 
@@ -22,7 +22,11 @@ class BookEditor(QTextEdit):
 
     FILEPATH = None
 
+    first_load = True
+
+    bookmaster:BookMaster = None
     autosave:AutoSave = None
+
 
     def __init__(self, master):
         super().__init__(master)
@@ -38,32 +42,40 @@ class BookEditor(QTextEdit):
 
 
     def setAutoSave(self, autosave_instance:AutoSave) -> None:
+        ''' sets the autosave module. '''
         self.autosave = autosave_instance
+        if self.bookmaster is not None:
+            self.autosave.setBookmaster(self.bookmaster)
 
     
     def setBookmaster(self, bookmaster:BookMaster) -> None:
+        ''' sets the bookmaster module. '''
         self.bookmaster = bookmaster
-        self.autosave.setBookmaster(self.bookmaster)
+        if self.autosave is not None:
+            self.autosave.setBookmaster(self.bookmaster)
 
 
     def setTextContents(self, contents:str, cursor_position:int = 0) -> None:    # load text to editor
         ''' sets contents inside the editor. '''
 
-        # print(contents)
         cursor_position = int(cursor_position)
 
-        self.autosave.deactivate()    # deactivate the autosaves
+        if self.autosave is not None:
+            if not self.first_load:    # make sure is not first load, because you don't want to save the empty string from empty editor
+                self.autosave.save()
+            self.autosave.deactivate()    # deactivate the autosaves
+
+        if self.first_load:
+            self.first_load = False
+
     
         if cursor_position > len(contents)-1:    # verify the cursor position to be valid
             cursor_position = 0
 
         html_body = self.gmd_parser.parseDocument(contents)    # add HTML to GMD file
-        print(html_body)
 
-        try:
-            self.textChanged.disconnect(self.onTextChanged)    # disconnect the text changed signal
-        except RuntimeError:    # will be raised if it's not connected
-            pass
+        try: self.textChanged.disconnect(self.onTextChanged)    # disconnect the text changed signal
+        except RuntimeError: pass    # will be raised if it's not connected
 
         document = QTextDocument()    # create a document
         document.setHtml(html_body)    # place the HTML text
@@ -89,7 +101,8 @@ class BookEditor(QTextEdit):
         self.textChanged.connect(self.onTextChanged)    # reconnect the text changed signal
 
         self.autosave.changeSplit(self.bookmaster.getCurrentSplit())    # set current split
-        self.autosave.activate()    # activate the autosave
+        if self.autosave is not None:
+            self.autosave.activate()    # activate the autosave
 
 
     def onTextChanged(self) -> None:    # update the HTML in the paragraph

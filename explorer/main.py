@@ -9,12 +9,12 @@ from addons.flowing_scroll import ResizeScrollArea
 import sys
 
 class ExplorerWindow(QWidget):
-    def __init__(self, return_commnd) -> None:
+    def __init__(self, return_commnd, library:str) -> None:
         super().__init__()
 
         self.setLayout(QVBoxLayout(self))
 
-        self.library_master = LibraryMaster('library')
+        self.library_master = LibraryMaster(library)
         self.last_read = self.library_master.getLastReadBookAndCover()
         self.covers_list = self.library_master.getBooksAndCoversList()
 

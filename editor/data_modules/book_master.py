@@ -1,11 +1,9 @@
 import os
-import zipfile
 from pathlib import Path
 from configobj import ConfigObj
-import shutil
-from zipfile38 import ZipFile
-from io import StringIO
 from addons.memory_zip import InMemoryZip
+
+
 
 class BookMaster():
     '''
@@ -17,17 +15,18 @@ class BookMaster():
     splits_order = None
 
     current_split = None
- 
-    def __init__(self, received_path_to_book:str) -> None:
-        ''' validate the file extension and extract it to a temp folder. '''
 
-        if not os.path.isfile(received_path_to_book):    # check the file exists
-            raise FileNotFoundError(f'the path {received_path_to_book} is not a file.')
+################################## INITIALIZATION #################################################
+    def __init__(self, path_to_book:str) -> None:
+        ''' validate the file extension and extract it. '''
 
-        if not received_path_to_book.endswith('.rmb'):    # check the file is .rmb
-            raise TypeError(f'expectiong an ".rmb" file but got a {received_path_to_book[-4:]} one.')
+        if not os.path.isfile(path_to_book):    # check the file exists
+            raise FileNotFoundError(f'the path {path_to_book} is not a file.')
 
-        self.path_to_book = received_path_to_book    # make the path global
+        if not path_to_book.endswith('.rmb'):    # check the file is .rmb
+            raise TypeError(f'expectiong an ".rmb" file but got a {path_to_book[-4:]} one.')
+
+        self.path_to_book = path_to_book    # make the path global
         self.archive_name = Path(self.path_to_book).stem      # get the file's name
         
         self.unzipped_book = InMemoryZip(self.path_to_book)
@@ -38,7 +37,7 @@ class BookMaster():
 
 
     def validateFileContents(self) -> bool:
-        ''' this functin verifies that all the necesary files exist. '''
+        ''' verifies that all the necesary files exist. '''
 
         necessary_files = [    # list of necessary files
             'order.ini', 
@@ -54,7 +53,7 @@ class BookMaster():
 
 
     def loadVariousDataToMemory(self) -> None:
-        ''' this function loads various necessary file to memory '''
+        ''' loads various necessary file to memory '''
 
         setup_ini_content = self.unzipped_book.getFileContents('setup.ini')
         self.setup = ConfigObj(setup_ini_content)
@@ -86,6 +85,7 @@ class BookMaster():
         self.split_order = files_existent_in_order    # load splits order to global memory
 
 
+################################ SPLIT MANIPULATION ###############################################
     def getStartpoint(self) -> (int, str):
         ''' returns the last open split and the last cursor position in that split'''
 
@@ -94,6 +94,10 @@ class BookMaster():
     
 
     def getNextSplit(self, current_split:str) -> str|None:
+        '''
+            returns the next split, of one exists. if none exists, it returns None. 
+            if the split name is not in in the split list, it returns the last item in the list.
+        '''
         try: current_index = self.split_order.index(current_split)
         except: print('next not in the list'); current_index = len(self.split_order)-1
         if current_index+1 < len(self.split_order):
@@ -102,6 +106,10 @@ class BookMaster():
 
 
     def getPrevSplit(self, current_split:str) -> str|None:
+        '''
+            returns the previous split, of one exists. if none exists, it returns None. 
+            if the split name is not in in the split list, it returns the first item in the list.
+        '''
         try: current_index = self.split_order.index(current_split)
         except: print('prev not in the list'); current_index = 0
         if current_index-1 >= 0:
@@ -110,12 +118,14 @@ class BookMaster():
     
 
     def splitExists(self, split_name:str) -> bool:
+        ''' returns 'True' if the split exists, else 'False'. '''
         if split_name in self.split_order:
             return True
         return False
     
     
     def getSplitByIndex(self, index:int) -> str|None:
+        ''' returns the name of the split with that index, or None if that index does not exist. '''
         if len(self.split_order) > 0:
             if index < 0:
                 return self.getSplitByIndex(0)
@@ -127,22 +137,18 @@ class BookMaster():
 
 
     def getListOfSplits(self) -> list:
+        ''' returns the list of splits existant in splits_order. '''
         return self.split_order
     
 
     def getListOfAllSplits(self) -> (list, list):
+        ''' returns a tuple of 2 lists: first the split_order, second all other splits not in split_order. '''
         return self.split_order, self.split_not_present_in_order
-    
-
-    def getArchiveName(self) -> str:
-        ''' rerturns the name of the archive. '''
-        return self.archive_name
 
 
     def getContentsOfSplit(self, split_name:str) -> str:
         contents = self.unzipped_book.getFileContents(split_name, '', mode='string')
         return contents
-
 
 
     def removeSpecificSplit(self, split_name:str) -> None:    # removes a split from order
@@ -174,16 +180,22 @@ class BookMaster():
         return self.current_split
 
 
+################################ ARCHIVE MANIPULATION #############################################
+    def getArchiveName(self) -> str:
+        ''' rerturns the name of the archive. '''
+        return self.archive_name
+
+
     def write(self, split_name:str, split_contents:str) -> None:
+        ''' writes the split_contents to split_name. '''
         split_contents = split_contents.replace('\n', '\n\n')
         self.unzipped_book.setFileContents(split_name, split_contents)
 
 
     def close(self, cursor:int = 0, split:str|None = None):
-        ''' makes the necessaty saves to the data before app closing. '''
+        ''' makes the necessaty saves to the data before closing archive. '''
         if split is None:     # fallback if split cannot be provided
             split = self.split_order[0]
-
         self.setup['last-read']['split'] = split
         self.setup['last-read']['cursor'] = cursor
         setup_ini_content = '\n'.join(self.setup.write())

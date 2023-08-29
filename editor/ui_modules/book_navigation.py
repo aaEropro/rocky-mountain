@@ -2,12 +2,13 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 from functools import partial
+from editor.data_modules.book_master import BookMaster
 
 class BookNavigation(QWidget):
     load_specific_split_signal = Signal(str)
     exit_navigation_signal = Signal(object)
 
-    def __init__(self, book_master:object=None):
+    def __init__(self, book_master:BookMaster=None):
         super().__init__()
 
         # Main layout

@@ -1,5 +1,6 @@
 import io
 import zipfile
+import copy
 
 class InMemoryZip:
     '''
@@ -23,7 +24,8 @@ class InMemoryZip:
 
     def getFileContents(self, file_name, default=None, mode='file-like', encoding='utf-8'):
         ''' returns the contents of the file file_name. if there is no such file, return default. '''
-        contents = self.file_data.get(file_name, default)
+        # contents = self.file_data.get(file_name, default)[:]    # slice the bytes, which returns a new bytes object, so to not modify the original
+        contents = copy.deepcopy(self.file_data.get(file_name, default))
 
         if mode == 'file-like':    # makes the contents file-like, ie breaks them into lines 
             contents = contents.splitlines()
@@ -40,6 +42,8 @@ class InMemoryZip:
 
     def setFileContents(self, file_name:str, data):
         ''' sets the contents of the file_name as data. '''
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         self.file_data[file_name] = data
 
 
