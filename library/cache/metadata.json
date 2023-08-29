@@ -1,22 +1,4 @@
 {
-   "hilldiggers": {
-      "author-first-name": "Neal",
-      "author-last-name": "Asher",
-      "univers": "Polity",
-      "series": "None",
-      "volume": "None",
-      "title": "Hilldiggers",
-      "isbn-e": "1975967830863"
-   },
-   "infinity_engine": {
-      "author-first-name": "Neal",
-      "author-last-name": "Asher",
-      "univers": "Polity",
-      "series": "Dark Intelligence",
-      "volume": "3",
-      "title": "Infinity Engine",
-      "isbn-e": "1975967830863"
-   },
    "polity_agent": {
       "author-first-name": "Neal",
       "author-last-name": "Asher",
@@ -24,24 +6,6 @@
       "series": "Agent Cormac",
       "volume": "4",
       "title": "Polity Agent",
-      "isbn-e": "1975967830863"
-   },
-   "the_gabble": {
-      "author-first-name": "Neal",
-      "author-last-name": "Asher",
-      "univers": "Polity",
-      "series": "None",
-      "volume": "None",
-      "title": "The Gabble",
-      "isbn-e": "1975967830863"
-   },
-   "war_factory": {
-      "author-first-name": "Neal",
-      "author-last-name": "Asher",
-      "univers": "Polity",
-      "series": "Dark Intelligence",
-      "volume": "2",
-      "title": "War Factory",
-      "isbn-e": "1975967830863"
+      "isbn-e": "9780330465366"
    }
 }

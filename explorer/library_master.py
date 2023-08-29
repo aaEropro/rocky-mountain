@@ -31,6 +31,8 @@ class LibraryMaster():
             self.cache_path = os.path.join(self.library_path, 'cache')
         else:
             raise FileNotFoundError(f'this is not a valid path: {library_path}')
+        
+        os.makedirs(self.cache_path, exist_ok=True)    # make sure the cache exists
 
         self.readMetadata()
         self.walkLibrary()
@@ -42,6 +44,11 @@ class LibraryMaster():
         if os.path.isfile(os.path.join(self.cache_path, 'metadata.json')):
             with open(os.path.join(self.cache_path, 'metadata.json'), 'r') as file:
                 self.metadata = json.load(file)
+
+
+    def writeMetadata(self):
+        with open(os.path.join(self.cache_path, 'metadata.json'), mode='w') as file:
+            json.dump(self.metadata, file, indent=3)
 
 
     def walkLibrary(self):
@@ -77,7 +84,6 @@ class LibraryMaster():
 
     def walkCoverCache(self) -> None:
         ''' walks the cache to find all covers '''
-        os.makedirs(self.cache_path, exist_ok=True) 
         items = os.listdir(self.cache_path)
         for item in items:
             if os.path.isfile(os.path.join(self.cache_path, item)) and item.endswith('.png'):
@@ -106,11 +112,6 @@ class LibraryMaster():
             self.covers_in_cache.append(f'cover-{bookname}.png')
         except Exception as e:
             print(f'error while retriving a cover: {e}')
-
-
-    def writeMetadata(self):
-        with open(os.path.join(self.cache_path, 'metadata.json'), 'w') as file:
-            json.dump(self.metadata, file, indent=3)
 
 
     def getCoversList(self) -> list:

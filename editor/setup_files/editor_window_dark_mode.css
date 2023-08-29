@@ -1,0 +1,17 @@
+QMainWindow, QMenu
+{
+    background-color: rgb(42, 41, 41);
+    color: rgb(209, 209, 209);
+}
+
+QPushButton
+{
+    background-color: rgb(27, 27, 27);
+    color: rgb(190, 189, 189);
+}
+
+QLabel
+{
+    background-color: rgb(42, 41, 41);
+    color: rgb(190, 189, 189);
+}

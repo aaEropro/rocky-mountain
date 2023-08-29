@@ -1,0 +1,39 @@
+QTextEdit {
+    background-color: #282828;   /* Change the background color */
+    color: #E8E8E8;             /* Change the text color */
+    border: 1px solid #616161;     /* Change border */
+}
+
+QTextEdit QScrollBar:vertical {
+    border: none;
+    background: #2A2A2A;
+    width: 10px;
+    margin: 0px;
+}
+
+QTextEdit QScrollBar::handle:vertical {
+    background: #5E5E5E;
+    min-height: 20px;
+}
+
+QTextEdit QScrollBar::add-line:vertical, QTextEdit QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
+}
+
+QTextEdit QScrollBar:horizontal {
+    border: none;
+    background: #2A2A2A;
+    height: 10px;
+    margin: 0px;
+}
+
+QTextEdit QScrollBar::handle:horizontal {
+    background: #5E5E5E;
+    min-width: 20px;
+}
+
+QTextEdit QScrollBar::add-line:horizontal, QTextEdit QScrollBar::sub-line:horizontal {
+    border: none;
+    background: none;
+}

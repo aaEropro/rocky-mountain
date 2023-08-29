@@ -13,6 +13,10 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        with open(os.path.join('editor', 'setup_files', 'editor_window_dark_mode.css')) as file:
+            self.editor_window_dark_mode_styling = file.read()
+        self.setStyleSheet(self.editor_window_dark_mode_styling)
+
         self.central_widget = QStackedWidget(self)
         self.setCentralWidget(self.central_widget)
         

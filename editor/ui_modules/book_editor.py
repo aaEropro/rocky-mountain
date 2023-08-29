@@ -1,4 +1,3 @@
-
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
@@ -7,6 +6,7 @@ from editor.data_modules.gmd_parser import GMDParser
 from editor.data_modules import unwrapper
 from editor.data_modules.autosave import AutoSave
 from editor.data_modules.book_master import BookMaster
+import os
 
 
 class BookEditor(QTextEdit):
@@ -40,6 +40,10 @@ class BookEditor(QTextEdit):
         self.block_format = QTextBlockFormat()
         self.block_format.setTextIndent(30)
 
+        with open(os.path.join('editor', 'setup_files', 'book_editor_dark_mode.css')) as file:
+            self.book_editor_dark_mode_styling = file.read()
+        self.setStyleSheet(self.book_editor_dark_mode_styling)
+
 
     def setAutoSave(self, autosave_instance:AutoSave) -> None:
         ''' sets the autosave module. '''
@@ -55,7 +59,7 @@ class BookEditor(QTextEdit):
             self.autosave.setBookmaster(self.bookmaster)
 
 
-    def setTextContents(self, contents:str, cursor_position:int = 0) -> None:    # load text to editor
+    def setTextContents(self, contents:str, cursor_position:int = 0, scroll_position:int=None) -> None:    # load text to editor
         ''' sets contents inside the editor. '''
 
         cursor_position = int(cursor_position)
@@ -67,7 +71,6 @@ class BookEditor(QTextEdit):
 
         if self.first_load:
             self.first_load = False
-
     
         if cursor_position > len(contents)-1:    # verify the cursor position to be valid
             cursor_position = 0
@@ -98,11 +101,25 @@ class BookEditor(QTextEdit):
         cursor.setPosition(cursor_position)    # set the cursor on the new possition
         self.setTextCursor(cursor)
 
+        if (scroll_position is not None) and (0 <= scroll_position <= 100):
+            vertical_scrollbar = self.verticalScrollBar()
+            vertical_scrollbar.setValue(scroll_position)  # set scrollbar position
+            self.moveCursorToTheTopLeft()
+
         self.textChanged.connect(self.onTextChanged)    # reconnect the text changed signal
 
         self.autosave.changeSplit(self.bookmaster.getCurrentSplit())    # set current split
         if self.autosave is not None:
             self.autosave.activate()    # activate the autosave
+
+
+    def reloadCurrentText(self) -> None:
+        ''' reloads the contents currently displayed. '''
+
+        contents = self.toPlainText().replace('\n', '\n\n')    # get the current contents
+        cursor_position = self.textCursor().position()    # get the current cursor index
+        scroll_position = self.verticalScrollBar().value()    # get the scrollbar position
+        self.setTextContents(contents, cursor_position, scroll_position)
 
 
     def onTextChanged(self) -> None:    # update the HTML in the paragraph

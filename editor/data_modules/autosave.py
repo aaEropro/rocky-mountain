@@ -27,7 +27,7 @@ class AutoSave(QObject):
         self.bookmaster = bookmaster
 
 
-    def activate(self, time_skip:int=6000) -> None:    # activate the timer
+    def activate(self, time_skip:int=20000) -> None:    # activate the timer
         """activate the internal timer"""
 
         if self.bookmaster is None:

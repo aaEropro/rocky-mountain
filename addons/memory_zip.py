@@ -32,7 +32,8 @@ class InMemoryZip:
         elif mode == 'bytes':    # the contents are read as bytes, so do nothing
             pass
         elif mode == 'string':
-            contents = contents.decode(encoding)
+            if type(contents) is not str:
+                contents = contents.decode(encoding)
             contents = contents.replace('\r', '')
         else:
             raise TypeError('.getFileContents accepted modes are "bytes", "file-like".')
