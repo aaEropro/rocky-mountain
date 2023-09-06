@@ -14,18 +14,20 @@ class LibraryMaster():
     metadata = {}
 
     default_metadata = {
-        "author-first-name": "None",
-        "author-last-name": "None",
+        "author-first-name": "",
+        "author-last-name": "",
 
-        "univers": "None",
-        "series": "None",
-        "volume": "None",
-        "title": "None",
+        "univers": "",
+        "series": "",
+        "volume": "",
+        "title": "",
 
-        "isbn-e": "None"
+        "isbn-e": ""
     }
 
-    def __init__(self, library_path:str) -> None:
+    def __init__(self) -> None:
+        setup = ConfigObj(os.path.join('explorer', 'setup.ini'))
+        library_path = setup['library-path']
         if os.path.isdir(library_path):
             self.library_path = library_path
             self.cache_path = os.path.join(self.library_path, 'cache')
@@ -76,7 +78,6 @@ class LibraryMaster():
                     meatdata = config.get('metadata', {})
                     self.metadata[book[:-4]] = self.default_metadata.copy()
                     self.metadata[book[:-4]].update(meatdata)
-                    print(self.default_metadata)
                 except Exception as e:
                     print(f'error while retriving metadata: {e}')
         self.writeMetadata()
@@ -118,6 +119,10 @@ class LibraryMaster():
         return self.covers_in_cache
     
 
+    def getLibraryPath(self) -> str:
+        return self.library_path
+    
+
     def getBooksAndCoversList(self) -> list:
         books_and_covers = []
         for item in self.books_in_library:
@@ -139,6 +144,15 @@ class LibraryMaster():
                 book_title = f"{book_data['author-first-name']} {book_data['author-last-name']}: {book_data['title']}"
                 return [(os.path.join(self.cache_path, f'cover-{last_read_file[:-4]}.png'), book_title, last_read_file)]
         return []
+    
+    
+    def getBookTitle(self, bookname):
+        return self.metadata.get(bookname, self.default_metadata)['title']
+    
+
+    def getBookAuthor(self, bookname):
+        return (self.metadata.get(bookname, self.default_metadata)['author-first-name'], self.metadata.get(bookname, self.default_metadata)['author-last-name'])
+
 
 if __name__ == '__main__':
     instance = LibraryMaster(r'C:\Users\jovanni\Documents\GitHub\rocky-mountain\library')

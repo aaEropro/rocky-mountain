@@ -87,7 +87,6 @@ class GMDParser():
 
         if '&lt;break&gt;' in para:
             para = f'<p {self.break_stylesheet}>{para}</p>'
-            print(para)
             return para
 
         #::: add html for tags
@@ -101,7 +100,6 @@ class GMDParser():
             para = para.replace(self.stags_dict[_]['end_tag'], self.stags_dict[_]['end_tag']+self.stags_dict[_]['html_end_tag'])
 
         para = f'<p {self.stylesheet}>'+para+'</p>'
-        # print(para)
         return para
 
     def plaintext2gmd(plaintext:str) -> str:

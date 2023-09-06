@@ -25,9 +25,13 @@ class ButtonsBar(QWidget):
         self.layout().addItem(self.spacer_left)
 
         #: buttons
-        self.settings_btn = QPushButton(self)
-        self.settings_btn.setText('settings')
-        self.layout().addWidget(self.settings_btn)
+        # self.settings_btn = QPushButton(self)
+        # self.settings_btn.setText('settings')
+        # self.layout().addWidget(self.settings_btn)
+
+        self.metadata_btn = QPushButton(self)
+        self.metadata_btn.setText('metadata')
+        self.layout().addWidget(self.metadata_btn)
 
         self.navigate_btn = QPushButton(self)
         self.navigate_btn.setText('navigate')

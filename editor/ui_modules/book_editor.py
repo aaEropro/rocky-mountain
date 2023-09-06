@@ -27,6 +27,8 @@ class BookEditor(QTextEdit):
     bookmaster:BookMaster = None
     autosave:AutoSave = None
 
+    presence_detection_singnal = Signal()
+
 
     def __init__(self, master):
         super().__init__(master)
@@ -84,16 +86,17 @@ class BookEditor(QTextEdit):
         document.setHtml(html_body)    # place the HTML text
 
         cursor = QTextCursor(document)
-        cursor.movePosition(QTextCursor.End)
+        cursor.movePosition(QTextCursor.Start)
 
-        one_time_bypass = False
-        while (not cursor.atStart()) or (not one_time_bypass):    # loop over all the paragraphs and apply the indent
-            if cursor.atStart():
-                one_time_bypass = True
+        while True:    # set first line indent
             block_format = cursor.blockFormat()
             block_format.merge(self.block_format)
             cursor.setBlockFormat(block_format)
-            cursor.movePosition(QTextCursor.PreviousBlock)
+            
+            if cursor.block().next().isValid():
+                cursor.movePosition(QTextCursor.NextBlock)
+            else:
+                break    # if there is no next block, break
 
         self.clear()    # clear the textEdit
         self.setDocument(document)    # set the new document
@@ -205,14 +208,17 @@ class BookEditor(QTextEdit):
         ''' add custome behaviour for mouse button clickes. '''
 
         if event.type() == QEvent.MouseButtonPress:
-            if event.button() == Qt.LeftButton and self._context:
-                cursor = self.cursorForPosition(event.pos())    # get cursor at mouse click position
-                self.setTextCursor(cursor)    # update the cursor position
-                self.processWord(event)
-                if self._tablet_mode:
-                    self.toggleContextHelp(self.context_btn, bypass=True)
-                return True    # event is handled
+            if event.button() == Qt.LeftButton:
+                self.presence_detection_singnal.emit()
+                if self._context:
+                    cursor = self.cursorForPosition(event.pos())    # get cursor at mouse click position
+                    self.setTextCursor(cursor)    # update the cursor position
+                    self.processWord(event)
+                    if self._tablet_mode:
+                        self.toggleContextHelp(self.context_btn, bypass=True)
+                    return True    # event is handled
             elif event.button() == Qt.RightButton:
+                self.presence_detection_singnal.emit()
                 cursor = self.cursorForPosition(event.pos())    # get cursor at mouse click position
                 self.setTextCursor(cursor)    # update the cursor position
                 self.processWord(event)
@@ -225,6 +231,7 @@ class BookEditor(QTextEdit):
 
         if event.type() == QTouchEvent.TouchBegin:
             self._start_touch_point = event.touchPoints()[0].startPos().y()
+            self.presence_detection_singnal.emit()
             return True
         elif event.type() == QTouchEvent.TouchUpdate and self._start_touch_point is not None:
             delta = event.touchPoints()[0].pos().y() - self._start_touch_point
@@ -242,6 +249,7 @@ class BookEditor(QTextEdit):
 
         super().wheelEvent(event)    # call the base class wheelEvent to retain default behavior
         self.moveCursorToTheTopLeft()
+        self.presence_detection_singnal.emit()
         
         
     def moveCursorToTheTopLeft(self) -> None:   # keeps the cursor on the top-left while scrolling

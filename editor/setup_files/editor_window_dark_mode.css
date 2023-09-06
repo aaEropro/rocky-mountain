@@ -10,8 +10,13 @@ QPushButton
     color: rgb(190, 189, 189);
 }
 
-QLabel
+QLabel, QWidget
 {
     background-color: rgb(42, 41, 41);
     color: rgb(190, 189, 189);
 }
+/* 
+QWidget[title-bar='true'], QLabel[title-bar='true']
+{
+    background-color: rgb(161, 28, 28);
+} */

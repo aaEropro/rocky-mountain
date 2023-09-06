@@ -9,12 +9,13 @@ from addons.flowing_scroll import ResizeScrollArea
 import sys
 
 class ExplorerWindow(QWidget):
-    def __init__(self, return_commnd, library:str) -> None:
+    def __init__(self, return_commnd) -> None:
         super().__init__()
 
         self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
 
-        self.library_master = LibraryMaster(library)
+        self.library_master = LibraryMaster()
         self.last_read = self.library_master.getLastReadBookAndCover()
         self.covers_list = self.library_master.getBooksAndCoversList()
 
@@ -23,9 +24,13 @@ class ExplorerWindow(QWidget):
         self.layout().addWidget(self.scroll_area)
 
         self.display_case = DisplayCase(self)
-        self.display_case.setBooksDict({'last-read': self.last_read, 'others': self.covers_list})
+        self.display_case.setBooks(self.covers_list)
         self.display_case.setReturnCommand(return_commnd)
         self.scroll_area.setWidget(self.display_case)
+
+
+    def setCoversSizeConstraints(self, constraints:list):
+        self.display_case.setCoverSizeConstraints(constraints)
 
 
 
@@ -34,7 +39,7 @@ if __name__ == '__main__':
     window = QMainWindow()
     window.resize(600, 600)
    
-    instance = ExplorerWindow(print)
+    instance = ExplorerWindow(print, 'library')
 
     window.setCentralWidget(instance)
 

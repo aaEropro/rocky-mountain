@@ -35,12 +35,12 @@ class MessageLabelWithTimer(ElidedLabel):
         a QLabel with the capacity to display a message for a sepcified time span.
     """
 
-    queue = []
-    infinit_timer_flag = False    # flag to inform that the current message has an infinit lifespan
-    activ_timer_flag = False    # flag to inform that a timer is running
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.queue = []
+        self.infinit_timer_flag = False    # flag to inform that the current message has an infinit lifespan
+        self.activ_timer_flag = False    # flag to inform that a timer is running
 
         self.timer = QTimer(self)    # create the timer that will track the lifespan of the messages displayed
 

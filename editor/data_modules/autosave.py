@@ -10,16 +10,18 @@ class AutoSave(QObject):
     """
     print_message_to_status_bar = Signal(str, object)
 
-    current_split = None
 
-    bookmaster = None
 
     def __init__(self, editor_instance:QTextEdit):
         super().__init__()
         self.editor_instance = editor_instance
+        
+        self.event_happened = False
+        self.current_split = None
+        self.bookmaster = None
 
         self.internal_timer = QTimer()
-        self.internal_timer.timeout.connect(self.save)
+        # self.internal_timer.timeout.connect(self.save)
 
 
     def setBookmaster(self, bookmaster:BookMaster) -> None:
@@ -29,11 +31,16 @@ class AutoSave(QObject):
 
     def activate(self, time_skip:int=20000) -> None:    # activate the timer
         """activate the internal timer"""
+        self.time_skip = time_skip
 
         if self.bookmaster is None:
             self.print_message_to_status_bar.emit('Error: bookmaster not set!', None)
             return
-        self.internal_timer.start(time_skip)
+        self.internal_timer.singleShot(self.time_skip, self.save)
+
+
+    def eventHappenes(self) -> None:
+        self.event_happened = True
 
 
     def deactivate(self) -> None:    # deactivates the timer
@@ -58,5 +65,8 @@ class AutoSave(QObject):
         except Exception as e:
             self.print_message_to_status_bar.emit(str(e), None)
             pass
+
+        if self.event_happened:
+            self.internal_timer.singleShot(self.time_skip, self.save)
 
 

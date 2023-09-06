@@ -2,23 +2,31 @@ import os
 from pathlib import Path
 from configobj import ConfigObj
 from addons.memory_zip import InMemoryZip
+from PySide6.QtCore import QTimer, QObject, Signal
+import json
 
 
 
-class BookMaster():
+class BookMaster(QObject):
     '''
         this class is designed to handle an RMB files. it checks for integrity and validates the file. 
         it also provides navigation functionality.
     '''
 
-    path_to_book = None
-    splits_order = None
-
-    current_split = None
-
 ################################## INITIALIZATION #################################################
     def __init__(self, path_to_book:str) -> None:
         ''' validate the file extension and extract it. '''
+
+        self.path_to_book = None
+        self.splits_order = None
+        self.current_split = None
+        self.timer = False
+        self.read_timer_instance = None
+        self.change_happened = False
+
+        self.autosave_timer = QTimer()
+        self.autosave_timer.timeout.connect(self.endAutosaveTimer)
+        self.autosave_timer.setSingleShot(True)
 
         if not os.path.isfile(path_to_book):    # check the file exists
             raise FileNotFoundError(f'the path {path_to_book} is not a file.')
@@ -54,6 +62,10 @@ class BookMaster():
 
     def loadVariousDataToMemory(self) -> None:
         ''' loads various necessary file to memory '''
+        read_times_content = self.unzipped_book.getFileContents('read_times.json', mode='string')
+        self.old_read_intervals = json.loads(read_times_content)['read-times']
+        self.read_intervals_since_opened = []
+        print(self.old_read_intervals)
 
         setup_ini_content = self.unzipped_book.getFileContents('setup.ini')
         self.setup = ConfigObj(setup_ini_content)
@@ -90,6 +102,8 @@ class BookMaster():
         ''' returns the last open split and the last cursor position in that split'''
 
         last_read = self.setup['last-read']
+        if last_read['split'] not in self.split_order:
+            return last_read['cursor'], self.getSplitByIndex(0)
         return last_read['cursor'], last_read['split']
     
 
@@ -148,7 +162,14 @@ class BookMaster():
 
     def getContentsOfSplit(self, split_name:str) -> str:
         contents = self.unzipped_book.getFileContents(split_name, '', mode='string')
-        return contents
+        json_dict = json.loads(contents)
+        return json_dict['body']
+    
+
+    def getMetadataOfSplit(self, split_name:str) -> str:
+        contents = self.unzipped_book.getFileContents(split_name, '', mode='string')
+        json_dict = json.loads(contents)
+        return json_dict['metadata']
 
 
     def removeSpecificSplit(self, split_name:str) -> None:    # removes a split from order
@@ -188,14 +209,40 @@ class BookMaster():
 
     def write(self, split_name:str, split_contents:str) -> None:
         ''' writes the split_contents to split_name. '''
+
+        if not self.timer:
+            self.timer = True
+            self.autosave_timer.start(60000)
         split_contents = split_contents.replace('\n', '\n\n')
-        self.unzipped_book.setFileContents(split_name, split_contents)
+        metadata = self.getMetadataOfSplit(split_name)
+        json_dict = {
+            "metadata": metadata,
+            "body": split_contents
+        }
+        json_str = json.dumps(json_dict)
+        self.unzipped_book.setFileContents(split_name, json_str)
+
+
+    def writeMetadata(self, split_name:str, metadata:dict) -> None:
+        body = self.getContentsOfSplit(split_name)
+        json_dict = {
+            "metadata": metadata,
+            "body": body
+        }
+        json_str = json.dumps(json_dict)
+        self.unzipped_book.setFileContents(split_name, json_str)
+
+
+    def endAutosaveTimer(self):
+        self.timer = False
+        self.close()
 
 
     def close(self, cursor:int = 0, split:str|None = None):
         ''' makes the necessaty saves to the data before closing archive. '''
-        if split is None:     # fallback if split cannot be provided
-            split = self.split_order[0]
+
+        if self.current_split is None:     # fallback if split cannot be provided
+            self.current_split = self.split_order[0]
         self.setup['last-read']['split'] = split
         self.setup['last-read']['cursor'] = cursor
         setup_ini_content = '\n'.join(self.setup.write())
@@ -205,7 +252,15 @@ class BookMaster():
         order_ini_content = '\n'.join(self.order.write())
         self.unzipped_book.setFileContents('order.ini', order_ini_content)
 
+        if self.read_timer_instance is not None:
+            self.read_intervals_since_opened = self.read_timer_instance.getReadTime()    # request read intervals
+        merged_read_times = self.old_read_intervals+self.read_intervals_since_opened
+        read_times_dict = {'read-times': merged_read_times}
+        read_times_content = json.dumps(read_times_dict).encode('utf-8')
+        self.unzipped_book.setFileContents('read_times.json', read_times_content)
+
         self.unzipped_book.save()
+        print('saved archive.')
 
 
 if __name__ == '__main__':

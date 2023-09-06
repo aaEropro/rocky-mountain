@@ -10,9 +10,6 @@ class Cover(QFrame):
     title_text = None
 
     title_font = QFont('Arial', 9)
-    # title_font.setBold(True)
-
-
 
     x_constraint = None
     y_constraint = None
@@ -34,6 +31,7 @@ class Cover(QFrame):
         self.title_label = QLabel(self)
         self.title_label.setFont(self.title_font)
         self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setWordWrap(True)
         self.layout().addWidget(self.title_label)
 
 

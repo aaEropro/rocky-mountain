@@ -13,6 +13,9 @@ from functools import partial
 from addons import cutils
 from editor.data_modules.autosave import AutoSave
 from editor.ui_modules.status_bar import StatusBar
+from editor.ui_modules.metadata_editor import MetadataEditor
+from editor.data_modules.read_timer import ReadTimer
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
@@ -38,6 +41,7 @@ class EditorWindow(QStackedWidget):
 
         self.widget1 = QWidget()
         self.widget1.setLayout(QVBoxLayout())
+        self.widget1.layout().setContentsMargins(0, 0, 0, 0)
         self.addWidget(self.widget1)
 
         #: buttons
@@ -53,7 +57,8 @@ class EditorWindow(QStackedWidget):
         self.buttons_bar.navigate_btn.clicked.connect(self.switchToBookNavigationPage)
         # self.buttons_bar.reload_btn.clicked.connect(lambda: self.loadTextToEditor(self.split_filename, self.editor.textCursor().position()))
         self.buttons_bar.reload_btn.clicked.connect(self.editor.reloadCurrentText)
-        self.buttons_bar.settings_btn.clicked.connect(self.switchToSettingsPage)
+        # self.buttons_bar.settings_btn.clicked.connect(self.switchToSettingsPage)
+        self.buttons_bar.metadata_btn.clicked.connect(self.switchToMetadataOverlay)
         self.buttons_bar.toggle_readonly_btn.clicked.connect(lambda: self.editor.toggleReadOnly(self.buttons_bar.toggle_readonly_btn))
         self.buttons_bar.toggle_context_help_btn.clicked.connect(lambda: self.editor.toggleContextHelp(self.buttons_bar.toggle_context_help_btn))
         self.buttons_bar.toggle_tabletmode_btn.clicked.connect(lambda: self.editor.toggleTabletMode(self.buttons_bar.toggle_tabletmode_btn))
@@ -64,6 +69,8 @@ class EditorWindow(QStackedWidget):
         self.status_bar = StatusBar(self)
         self.widget1.layout().addWidget(self.status_bar)
         self.autosave.print_message_to_status_bar.connect(self.status_bar.showRightMessage)
+
+        self.read_timer = ReadTimer()
 
         self.loadSetupData()
 
@@ -84,6 +91,14 @@ class EditorWindow(QStackedWidget):
 
         cursor_position, split_filename = self.bookmaster.getStartpoint()
         self.loadTextToEditor(split_filename, cursor_position)
+        self.read_timer.activate()    # activate the read timer
+        self.editor.presence_detection_singnal.connect(self.presenceDetection)
+        self.bookmaster.read_timer_instance = self.read_timer
+
+
+    def presenceDetection(self) -> None:
+        self.read_timer.signalEventHappened()
+        self.autosave.eventHappenes()
 
 
 ################################## BOOK NAVIGATION ################################################
@@ -123,9 +138,25 @@ class EditorWindow(QStackedWidget):
         self.switchToEditor(settings_obj)
 
 
+    def switchToMetadataOverlay(self) -> None:
+        metadata = self.bookmaster.getMetadataOfSplit(self.split_filename)
+        metadata_editor = MetadataEditor(self)
+        metadata_editor.loadMetadata(metadata)
+        metadata_editor.save.connect(self.exitMetadataOverlay)
+        metadata_editor.show()
+        metadata_editor.setFocus()
+
+
+    def exitMetadataOverlay(self, meatdata_obj:MetadataEditor, metadata:dict) -> None:
+        meatdata_obj.closeOverlay()
+        self.bookmaster.writeMetadata(self.split_filename, metadata)
+        self.status_bar.showLeftMessage(f'chapter {metadata["number"]}: {metadata["title"]} - {self.split_filename}', timer=None, override=True)
+
+
 ################################## EDITOR #########################################################
     def switchToEditor(self, widget_from_previous_editor:QWidget) -> None:
         ''' switches to the editor page. '''
+
         self.removeWidget(widget_from_previous_editor)
         widget_from_previous_editor.deleteLater()    # marks the previous page for deletion
         self.setCurrentIndex(0)    # force the stack widget to return to the editorer page.
@@ -135,13 +166,15 @@ class EditorWindow(QStackedWidget):
 
     def loadTextToEditor(self, split_name:str = None, cursor_position:int=0):
         ''' loads the text to the editor. '''
+
         self.split_filename = split_name    # update the split name
 
         self.bookmaster.setCurrentSplit(self.split_filename)    # update the bookmaster's curent split
-        contents = self.bookmaster.getContentsOfSplit(self.split_filename)
-        self.editor.setTextContents(contents, cursor_position)
+        body = self.bookmaster.getContentsOfSplit(self.split_filename)
+        metadata = self.bookmaster.getMetadataOfSplit(self.split_filename)
+        self.editor.setTextContents(body, cursor_position)
 
-        self.status_bar.showLeftMessage(self.split_filename, timer=None, override=True)
+        self.status_bar.showLeftMessage(f'chapter {metadata["number"]}: {metadata["title"]} - {self.split_filename}', timer=None, override=True)
 
         self.checkScrollPosition()    # force a check on the prev/next buttons
         self.editor.setFocus()
