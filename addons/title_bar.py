@@ -1,11 +1,10 @@
 from PySide6.QtCore import *
-import PySide6.QtCore
 from PySide6.QtGui import *
-import PySide6.QtGui
 from PySide6.QtWidgets import *
-import sys
-from addons.png_icon_manipulation import colorizeImage, resizeImage
 import os
+
+from addons.png_icon_manipulation import colorizeImage, resizeImage
+
 
 
 class ClickableLabel(QLabel):
@@ -27,7 +26,11 @@ class ClickableLabel(QLabel):
             }''')
 
 
+
 class TitleBar(QWidget):
+    '''
+        a title bar widget, with support for window dragging and closing/minimize/maximize.
+    '''
 
     def __init__(self):
         super().__init__()
@@ -56,8 +59,10 @@ class TitleBar(QWidget):
         self.logo_widget.layout().setSpacing(0)
         self.hbox_layout.addWidget(self.logo_widget)
         self.logo_label = QLabel(self.logo_widget)    # left corner logo
-        self.logo_pixmap = QPixmap(os.path.join('logos', 'rm_logo.png'))
-        self.logo_pixmap = self.logo_pixmap.scaled(self.h_size, self.h_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logo_pixmap = QPixmap(os.path.join('assets', 'logos', 'rm_logo.png'))
+        self.logo_pixmap = self.logo_pixmap.scaled(self.h_size, self.h_size, 
+                                                   Qt.AspectRatioMode.KeepAspectRatio, 
+                                                   Qt.TransformationMode.SmoothTransformation)
         self.logo_label.setPixmap(self.logo_pixmap)
         self.logo_widget.layout().addWidget(self.logo_label)
 
@@ -71,8 +76,8 @@ class TitleBar(QWidget):
 
 
         self.title_label = QLabel(self)
-        self.title_label.setAlignment(Qt.AlignCenter | Qt.AlignCenter)
-        self.title_label.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        self.title_label.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
         self.hbox_layout.addWidget(self.title_label)
 
 
@@ -101,6 +106,7 @@ class TitleBar(QWidget):
 
 
     def setTitle(self, title:str) -> None:
+        ''' set the title on the titlebar. '''
         self.title_label.clear()
         self.title_label.setText(title)
 
@@ -110,21 +116,21 @@ class TitleBar(QWidget):
         self.title_label.setFont(font)
 
 
-    def createWindowManipulation(self, icon_size:int=28, color:QColor=QColor(206, 206, 206)) -> None:
+    def createWindowManipulation(self, icon_size:int=16, color:QColor=QColor(206, 206, 206)) -> None:
         ''' creates the minimize, maximize and close window buttons. '''
         icon_size = QSize(icon_size, icon_size)
 
-        min_icon = colorizeImage(QPixmap(os.path.join('icons', 'minimize.png')), color)
+        min_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'minimize.png')), color)
         min_icon = resizeImage(min_icon, icon_size)
-        max_icon = colorizeImage(QPixmap(os.path.join('icons', 'maximize.png')), color)
+        max_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'maximize.png')), color)
         max_icon = resizeImage(max_icon, icon_size)
-        close_icon = colorizeImage(QPixmap(os.path.join('icons', 'close.png')), color)
+        close_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'close.png')), color)
         close_icon = resizeImage(close_icon, icon_size)
 
         self.minimize_button = ClickableLabel(self.window_buttons_widget)
         self.minimize_button.setFixedSize(self.h_size, self.h_size)
         self.minimize_button.setStyleSheet("background-color: green;")
-        self.minimize_button.setAlignment(Qt.AlignCenter|Qt.AlignCenter)
+        self.minimize_button.setAlignment(Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
         self.minimize_button.setPixmap(min_icon)
         self.minimize_button.setHover()
         self.minimize_button.clicked.connect(self.toggleMinimized)
@@ -134,7 +140,7 @@ class TitleBar(QWidget):
         self.maximize_button = ClickableLabel(self.window_buttons_widget)
         self.maximize_button.setFixedSize(self.h_size, self.h_size)
         self.maximize_button.setStyleSheet("background-color: blue;")
-        self.maximize_button.setAlignment(Qt.AlignCenter|Qt.AlignCenter)
+        self.maximize_button.setAlignment(Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
         self.maximize_button.setPixmap(max_icon)
         self.maximize_button.setHover()
         self.maximize_button.clicked.connect(self.toggleMaximized)
@@ -144,7 +150,7 @@ class TitleBar(QWidget):
         self.close_button = ClickableLabel(self.window_buttons_widget)
         self.close_button.setFixedSize(self.h_size, self.h_size)
         self.close_button.setStyleSheet("background-color: green;")
-        self.close_button.setAlignment(Qt.AlignCenter|Qt.AlignCenter)
+        self.close_button.setAlignment(Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
         self.close_button.setPixmap(close_icon)
         self.close_button.clicked.connect(self.closeWindow)
         self.close_button.setStyleSheet("QLabel:hover{background-color: red;}")
@@ -207,14 +213,24 @@ class TitleBar(QWidget):
             icon_size = size
         icon_size = QSize(icon_size, icon_size)
 
-        settings_icon = colorizeImage(QPixmap(os.path.join('icons', 'icons8-settings-96.png')), QColor(206, 206, 206))
+        settings_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'icons8-settings-96.png')), QColor(206, 206, 206))
         settings_icon = resizeImage(settings_icon, icon_size)
+        home_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'home.png')), QColor(206, 206, 206))
+        home_icon = resizeImage(home_icon, icon_size)
+
+        self.home_button = ClickableLabel()
+        self.home_button.setFixedSize(size, size)
+        self.home_button.setPixmap(home_icon)
+        self.home_button.setHover()
+        self.home_button.setAlignment(Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignCenter)
+        self.menu_layout.addWidget(self.home_button)
 
         self.settings_button = ClickableLabel()
         self.settings_button.setFixedSize(size, size)
         self.settings_button.setPixmap(settings_icon)
         self.settings_button.setHover()
-        self.settings_button.setAlignment(Qt.AlignLeft|Qt.AlignCenter)
+        self.settings_button.setAlignment(Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignCenter)
         self.menu_layout.addWidget(self.settings_button)
+
 
 
