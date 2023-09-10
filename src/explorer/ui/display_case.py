@@ -32,15 +32,6 @@ class DisplayCase(QWidget):
         SettingsMasterStn().subscribe('cover-height', self.coverHeightChanged)
 
 
-    def setReturnCommand(self, return_command) -> None:
-        ''' set the return command of the buttons '''
-        self.return_command = return_command
-
-        for item in self.books:
-            image_path, title, filename = item
-            self.covers_dict[title].left_click.connect(partial(self.left_click.emit, filename))
-
-
     def setBooks(self, books:list, size_constraints:tuple=(250,250)) -> None:
         '''
             set the books list from which are displayed covers.
@@ -62,13 +53,16 @@ class DisplayCase(QWidget):
         
         for item in self.books:
             image_path, title, filename = item
-            self.covers_dict[title] = Cover(self)
-            self.covers_dict[title].setImage(image_path)
-            self.covers_dict[title].setTitle(title)
-            self.covers_dict[title].setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.MinimumExpanding)
-            self.covers_dict[title].setSizeConstraints(self.cover_size_constraints[0], self.cover_size_constraints[1])
-            self.covers_dict[title].left_click.connect(partial(self.left_click.emit, filename))
-            self.covers_dict[title].right_click.connect(partial(self.right_click.emit, filename))
+
+            cover = Cover(self)
+            cover.setImage(image_path)
+            cover.setTitle(title)
+            cover.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.MinimumExpanding)
+            cover.setSizeConstraints(self.cover_size_constraints[0], self.cover_size_constraints[1])
+            cover.left_click.connect(partial(self.left_click.emit, filename))
+            cover.right_click.connect(partial(self.right_click.emit, filename))
+
+            self.covers_dict[title] = cover
             self.flow_layout.addWidget(self.covers_dict[title])
 
 

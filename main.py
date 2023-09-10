@@ -4,6 +4,10 @@ from PySide6.QtWidgets import *
 import sys
 import os
 
+import ctypes
+myappid = u'tryhardCo.stupidAsAlways.RockyMountain.0.2'    # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
 from src.editor.main import EditorWindow
 from src.explorer.main import ExplorerWindow
 from addons.main_window import MainWindow
@@ -12,11 +16,9 @@ from src.settings.ui.settings_ui import Settings
 from src.settings.data.settings_master import SettingsMasterStn
 from src.explorer.data.library_master import LibraryMasterStn
 
-import ctypes
-myappid = u'tryhardCo.stupidAsAlways.RockyMountain.0'    # arbitrary string
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 VERSION = '0.2.0'
+
 
 
 class MainWindow(MainWindow):
@@ -42,8 +44,8 @@ class MainWindow(MainWindow):
         self.central_widget.setContentsMargins(0, 0, 0, 0)
         self.setCentralWidget(self.central_widget)
         
-        self.explorer_window = ExplorerWindow(self.loadBook)
-        self.explorer_window.display_case.left_click.connect(self.loadBook)
+        self.explorer_window = ExplorerWindow()
+        self.explorer_window.clicked.connect(self.loadBook)
         self.central_widget.addWidget(self.explorer_window)
         self.current_widget = self.explorer_window
 
@@ -85,6 +87,8 @@ class MainWindow(MainWindow):
         self.editor_window.close()
         self.editor_window.deleteLater()
         self.createEditorWidget()
+        self.title_bar.setTitle(f'Rocky Mountain - {VERSION}')
+        self.current_widget = self.explorer_window
         self.central_widget.setCurrentWidget(self.explorer_window)
 
 
@@ -110,6 +114,8 @@ class MainWindow(MainWindow):
         SettingsMasterStn().setSpecific(topic='window-position', value=window_position)
 
         return super().closeEvent(event)
+
+
 
 
 

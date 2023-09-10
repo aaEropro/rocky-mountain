@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QTextEdit
 from src.editor.data.gmd_parser import GMDParser
 from src.editor.data import unwrapper
 
-from src.editor.ui.responsive_context_menu import ResponsiveContextMenu
+from src.editor.ui.responsive_context_menu_2 import ResponsiveContextMenu
 
 
 

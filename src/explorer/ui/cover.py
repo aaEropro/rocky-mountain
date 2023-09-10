@@ -4,6 +4,26 @@ from PySide6.QtWidgets import *
 
 
 
+class ClickableLabel(QLabel):
+    clicked = Signal()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self.clicked.emit()
+        return True
+    
+    def setHover(self):
+        self.setStyleSheet('''
+            QLabel:hover
+            {
+                background-color: rgb(70, 69, 69);
+            }''')
+
+
+
 class Cover(QFrame):
     left_click = Signal()
     right_click = Signal()
@@ -54,11 +74,22 @@ class Cover(QFrame):
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(self.image_label)
 
-        self.title_label = QLabel(self)
+        self.title_widget = QWidget(self)
+        self.title_layout = QHBoxLayout(self.title_widget)
+        self.title_layout.setContentsMargins(0, 0, 0, 0)
+        self.title_layout.setSpacing(3)
+        self.layout().addWidget(self.title_widget)
+
+        self.title_label = QLabel(self.title_widget)
         self.title_label.setFont(self.title_font)
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setWordWrap(True)
-        self.layout().addWidget(self.title_label)
+        self.title_layout.addWidget(self.title_label)
+
+        # self.three_dots = ClickableLabel(self.title_widget)
+        # self.three_dots.setPixmap(QPixmap(r'assets\icons\three-dots-2.png'))
+        # self.three_dots.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        # self.title_layout.addWidget(self.three_dots)
 
 
     def setImage(self, image_path:str) -> None:
@@ -124,21 +155,22 @@ class Cover(QFrame):
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         ''' handle the mouse exiting the QFrame. '''
-        geometry = self.rect()
-        event_in_geometry = geometry.contains(event.pos())
+        main_geometry = self.rect()
+        # three_dots_geometry = self.three_dots.rect()
+        event_in_main_geometry = main_geometry.contains(event.pos())
 
-        if self.left_mouse_clicked and (not event_in_geometry) and (not self.left_has_exit):
+        if self.left_mouse_clicked and (not event_in_main_geometry) and (not self.left_has_exit):
             self.setStyleSheet(self.default_stylesheet)
             self.left_has_exit = True
         
-        elif self.left_mouse_clicked and event_in_geometry and self.left_has_exit:
+        elif self.left_mouse_clicked and event_in_main_geometry and self.left_has_exit:
             self.setStyleSheet(self.clicked_stylesheet)
             self.left_has_exit = False
 
-        elif self.right_mouse_clicked and (not event_in_geometry) and (not self.right_has_exit):
+        elif self.right_mouse_clicked and (not event_in_main_geometry) and (not self.right_has_exit):
             self.right_has_exit = True
         
-        elif self.right_mouse_clicked and event_in_geometry and self.right_has_exit:
+        elif self.right_mouse_clicked and event_in_main_geometry and self.right_has_exit:
             self.right_has_exit = False
 
         return super().mouseMoveEvent(event)

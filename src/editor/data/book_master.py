@@ -105,6 +105,7 @@ class BookMaster(QObject):
         if last_read_split not in self.split_order:
             last_read_split = self.split_order[0]
         self.current_split = last_read_split
+        # self.first_load = True
     
     def isNext(self):
         current_index = self.split_order.index(self.current_split)

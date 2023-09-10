@@ -10,8 +10,8 @@ class ResponsiveContextMenu():
         context_menu = QMenu(self.editor)
         context_menu.setStyleSheet("""
             QMenu {
-                background-color: white;
-                border: 1px solid black;
+                background-color: rgb(27, 27, 27);
+                border: 1px solid rgb(42, 41, 41);
             }
             QMenu::item {
                 padding: 5px 20px;
@@ -154,28 +154,53 @@ class ResponsiveContextMenu():
         remove_rtag_action.setEnabled(False)
         remove_rtag_action.triggered.connect(lambda: self.removeRTag(word_unwrapped, position_when_clicked))
 
-        #::: convert dtag
-        convert_dtag_menu = QMenu('convert dtag', tag_menu)
-        convert_dtag_menu.setEnabled(False)
-        tag_menu.addMenu(convert_dtag_menu)
 
-        convert_dtag_to_e = convert_dtag_menu.addAction('convert dtag to e')
-        convert_dtag_to_e.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'e'))
 
-        convert_dtag_to_a = convert_dtag_menu.addAction('convert dtag to a')
-        convert_dtag_to_a.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'a'))
 
-        convert_dtag_to_q = convert_dtag_menu.addAction('convert dtag to q')
-        convert_dtag_to_q.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'q'))
 
-        convert_dtag_to_s = convert_dtag_menu.addAction('convert dtag to s')
-        convert_dtag_to_s.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 's'))
 
-        convert_dtag_to_t = convert_dtag_menu.addAction('convert dtag to t')
-        convert_dtag_to_t.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 't'))
 
-        convert_dtag_to_f = convert_dtag_menu.addAction('convert dtag to f')
-        convert_dtag_to_f.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'f'))
+
+
+
+
+
+
+
+
+        # #::: convert dtag
+        # convert_dtag_menu = QMenu('convert dtag', tag_menu)
+        # convert_dtag_menu.setEnabled(False)
+        # tag_menu.addMenu(convert_dtag_menu)
+
+        convert_tag_menu = QMenu('convert', tag_menu)
+        convert_tag_menu.setEnabled(False)
+        tag_menu.addMenu(convert_tag_menu)
+
+        self.convert_tag_dict = {}
+        for item in ['e', 'a', 's', 'q', 't', 'f']:
+            action = convert_tag_menu.addAction(f'-- {item} --')
+            action.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, item))
+            self.convert_tag_dict[item] = action
+
+
+        # convert_dtag_to_e = convert_dtag_menu.addAction('convert dtag to e')
+        # convert_dtag_to_e.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'e'))
+
+        # convert_dtag_to_a = convert_dtag_menu.addAction('convert dtag to a')
+        # convert_dtag_to_a.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'a'))
+
+        # convert_dtag_to_q = convert_dtag_menu.addAction('convert dtag to q')
+        # convert_dtag_to_q.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'q'))
+
+        # convert_dtag_to_s = convert_dtag_menu.addAction('convert dtag to s')
+        # convert_dtag_to_s.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 's'))
+
+        # convert_dtag_to_t = convert_dtag_menu.addAction('convert dtag to t')
+        # convert_dtag_to_t.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 't'))
+
+        # convert_dtag_to_f = convert_dtag_menu.addAction('convert dtag to f')
+        # convert_dtag_to_f.triggered.connect(lambda: self.addDTag(word_unwrapped, position_when_clicked, 'f'))
 
 
         #::: convert ltag
@@ -217,6 +242,29 @@ class ResponsiveContextMenu():
 
         convert_rtag_to_f = convert_rtag_menu.addAction('convert rtag to f')
         convert_rtag_to_f.triggered.connect(lambda: self.addRTag(word_unwrapped, position_when_clicked, 'f'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -267,7 +315,8 @@ class ResponsiveContextMenu():
             add_rtag_menu.setEnabled(True)
         if word_unwrapped[2] != '' and word_unwrapped[4] != '':
             remove_dtag_action.setEnabled(True)
-            convert_dtag_menu.setEnabled(True)
+            # convert_dtag_menu.setEnabled(True)
+            convert_tag_menu.setEnabled(True)
             convert_ltag_menu.setEnabled(True)
             convert_rtag_menu.setEnabled(True)
         if word_unwrapped[2] != '':

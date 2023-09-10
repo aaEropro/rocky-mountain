@@ -13,7 +13,9 @@ from src.explorer.ui.hires_cover_viewer import HighResViewer
 
 
 class ExplorerWindow(QWidget):
-    def __init__(self, return_commnd) -> None:
+    clicked = Signal(str)
+
+    def __init__(self) -> None:
         super().__init__()
 
         self.main_layout = QVBoxLayout(self)
@@ -27,7 +29,7 @@ class ExplorerWindow(QWidget):
 
         self.display_case = DisplayCase(self)
         self.display_case.setBooks(self.covers_list)
-        self.display_case.setReturnCommand(return_commnd)
+        self.display_case.left_click.connect(self.clicked.emit)
         self.display_case.right_click.connect(self.createHighresViewer)
         self.scroll_area.setWidget(self.display_case)
 
