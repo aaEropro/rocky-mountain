@@ -1,11 +1,13 @@
 from PySide6.QtCore import Signal, QEvent, QPoint
-from PySide6.QtGui import Qt, QTextBlockFormat, QTextDocument, QTextCursor, QTouchEvent
+from PySide6.QtGui import Qt, QTextBlockFormat, QTextDocument, QTextCursor, QTouchEvent, QFont, QTextCharFormat, QCloseEvent
 from PySide6.QtWidgets import QTextEdit
 
 from src.editor.data.gmd_parser import GMDParser
 from src.editor.data import unwrapper
 
-from src.editor.ui.responsive_context_menu_2 import ResponsiveContextMenu
+from src.settings.data.settings_master import SettingsMasterStn
+
+from src.editor.ui.responsive_context_menu_3 import ResponsiveContextMenu
 
 
 
@@ -26,8 +28,10 @@ class BookEditor(QTextEdit):
     def __init__(self, master):
         super().__init__(master)
 
-        self.setAttribute(Qt.WA_AcceptTouchEvents, True)    # set the flag to accept touch control
-        self.viewport().installEventFilter(self)    # install event filter on textEdit viewport
+        self.setAttribute(Qt.WA_AcceptTouchEvents, True)
+        self.viewport().installEventFilter(self)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.responsive_context_menu = ResponsiveContextMenu(self)    # initiate the responsive context menu
         self.gmd_parser = GMDParser()    # initiate the GMD parser
@@ -35,10 +39,44 @@ class BookEditor(QTextEdit):
         self.block_format = QTextBlockFormat()
         self.block_format.setTextIndent(30)
 
+        SettingsMasterStn().subscribe('font-size', self.changedFontSettings)
+        SettingsMasterStn().subscribe('font-family', self.changedFontSettings)
 
-        # with open(os.path.join('editor', 'setup_files', 'book_editor_dark_mode.css')) as file:
-        #     self.book_editor_dark_mode_styling = file.read()
-        # self.setStyleSheet(self.book_editor_dark_mode_styling)
+
+    def changedFontSettings(self):
+        try: self.textChanged.disconnect(self.onTextChanged)    # disconnect the text changed signal
+        except RuntimeError: pass    # will be raised if it's not connected
+
+        family = SettingsMasterStn().getSpecific('font-family')
+        size = int(SettingsMasterStn().getSpecific('font-size'))
+        font = QFont()
+        font.setPointSize(size)
+        font.setFamily(family)
+
+        char_format = QTextCharFormat()
+        char_format.setFont(font)
+
+        cursor = self.textCursor()
+        position = cursor.position()
+        cursor.select(QTextCursor.Document)    # select all text in the document
+        cursor.mergeCharFormat(char_format)
+        cursor.clearSelection()
+        cursor.setPosition(position)
+        self.setTextCursor(cursor)
+
+        self.textChanged.connect(self.onTextChanged, type=Qt.UniqueConnection)    # reconnect after making the changes
+
+
+    def getFontSettings(self):
+        family = SettingsMasterStn().getSpecific('font-family')
+        size = int(SettingsMasterStn().getSpecific('font-size'))
+        font = QFont()
+        font.setPointSize(size)
+        font.setFamily(family)
+
+        char_format = QTextCharFormat()
+        char_format.setFont(font)
+        return char_format
 
 
     def setTextContents(self, contents:str, cursor_position:int = 0, scroll_position:int=None) -> None:    # load text to editor
@@ -80,7 +118,9 @@ class BookEditor(QTextEdit):
             vertical_scrollbar.setValue(scroll_position)  # set scrollbar position
             self.moveCursorToTheTopLeft()
 
-        self.textChanged.connect(self.onTextChanged)    # reconnect the text changed signal
+        self.changedFontSettings()
+
+        self.textChanged.connect(self.onTextChanged, type=Qt.UniqueConnection)    # reconnect the text changed signal
 
 
     def reloadCurrentText(self) -> None:
@@ -94,24 +134,34 @@ class BookEditor(QTextEdit):
 
     def onTextChanged(self) -> None:    # update the HTML in the paragraph
         self.textChanged.disconnect(self.onTextChanged)    # disconnect immediately to avoid recursion
+
         cursor = self.textCursor()   # get the current cursor position for reference
         cursor_pos = cursor.position()
-        cursor.movePosition(QTextCursor.StartOfBlock)    # select the paragraph under the cursor 
-                                                         # and run it trough the GMD parser, then replace it.
-        cursor.movePosition(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
+        print(cursor_pos)
+
+        cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
         paragraph_text = cursor.selectedText()
         to_html_paragraph_text = self.gmd_parser.parse_para(paragraph_text)
         cursor.removeSelectedText()
         cursor.insertHtml(to_html_paragraph_text)
+
+        char_format = self.getFontSettings()
+        cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+        cursor.mergeCharFormat(char_format)
+        cursor.clearSelection()
+
         cursor.setPosition(cursor_pos)    # set the cursor to the old position. it should not give an error 
                                           # because the parser only adds HTML tags, which are not taken into 
                                           # account when calculating the index position of the cursor in the 
                                           # plain text
+
         block_format = cursor.blockFormat()
         block_format.merge(self.block_format)
         cursor.setBlockFormat(block_format)    # force an update on the block format
+
         self.setTextCursor(cursor)
-        self.textChanged.connect(self.onTextChanged)    # reconnect after making the changes
+
+        self.textChanged.connect(self.onTextChanged, type=Qt.UniqueConnection)    # reconnect after making the changes
 
 
 ################################## UNDER CURSOR ###################################################
@@ -173,8 +223,8 @@ class BookEditor(QTextEdit):
 
 
 ################################## EVENTS #########################################################
-    def eventFilter(self, source, event):    # event filter for buttons of mouse clickes
-        ''' add custome behaviour for mouse button clickes. '''
+    def eventFilter(self, source, event):    # filter for clickes
+        ''' add custome behaviour for clickes. '''
 
         if event.type() == QEvent.MouseButtonPress:
 
@@ -196,8 +246,8 @@ class BookEditor(QTextEdit):
                 return True
 
         return super().eventFilter(source, event)
-    
-    
+
+
     def event(self, event):    # event filter for touch
         ''' add custome behaviour for touch events. '''
 
@@ -207,12 +257,15 @@ class BookEditor(QTextEdit):
             return True
 
         elif event.type() == QTouchEvent.TouchUpdate and self._start_touch_point is not None:
+            self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
             delta = event.touchPoints()[0].pos().y() - self._start_touch_point
+            self._start_touch_point = event.touchPoints()[0].pos().y()
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta)
             self.moveCursorToTheTopLeft()
             return True
 
         elif event.type() == QTouchEvent.TouchEnd:
+            self.setTextInteractionFlags(Qt.TextInteractionFlag.TextEditorInteraction)
             self._start_touch_point = None
             return True
 
@@ -270,3 +323,9 @@ class BookEditor(QTextEdit):
         else:
             self._tablet_mode = False
         self.setFocus()
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        SettingsMasterStn().unsubscribe('font-size', self.changedFontSettings)
+        SettingsMasterStn().unsubscribe('font-family', self.changedFontSettings)
+
+        return super().closeEvent(event)

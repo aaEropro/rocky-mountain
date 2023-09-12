@@ -52,6 +52,7 @@ class Settings(QWidget):
 
         self.coverSizeSettings()
         self.libraryPathSettings()
+        self.editorSettings()
 
 
 ################################## COVERS #########################################################
@@ -79,6 +80,7 @@ class Settings(QWidget):
         self.cover_y_slider.valueChanged.connect(self.coverYValueChanged)
         self.cover_size_layout.addWidget(self.cover_y_slider, 2, 3)
 
+
     def coverYEntryChanged(self, value:str):
         if value == '':
             return
@@ -90,6 +92,86 @@ class Settings(QWidget):
         self.cover_y_size_entry.setText(str(value))
         self.settings['cover-height'] = value
         self.triggerSettingChange()
+
+
+################################## EDITOR #########################################################
+    def editorSettings(self):
+        font = QFont()
+        font.setFamily(self.settings['font-family'])
+        font.setPointSize(int(self.settings['font-size']))
+        self.font_size_test_text = QLabel(self.scroll_content)
+        self.font_size_test_text.setText('this is a test text for testing the font and the size.')
+        self.font_size_test_text.setFont(font)
+        self.font_size_test_text.setWordWrap(True)
+        self.scroll_content_layout.addWidget(self.font_size_test_text)
+
+        self.font_family_widget = QWidget(self.scroll_content)
+        self.font_family_layout = QHBoxLayout(self.font_family_widget)
+        self.scroll_content_layout.addWidget(self.font_family_widget)
+
+        self.font_family_label = QLabel(self.font_family_widget)
+        self.font_family_label.setText('Font family:')
+        self.font_family_layout.addWidget(self.font_family_label)
+
+        font_database = QFontDatabase()
+        font_families = font_database.families()
+
+        self.font_family_combo = QComboBox(self.font_family_widget)
+        self.font_family_combo.addItems(font_families)
+        self.font_family_combo.setCurrentText(str(self.settings['font-family']))
+        self.font_family_combo.currentTextChanged.connect(self.changeFontFamily)
+        self.font_family_layout.addWidget(self.font_family_combo)
+
+        self.font_size_widget = QWidget(self.scroll_content)
+        self.font_settings_layout = QHBoxLayout(self.font_size_widget)
+        self.scroll_content_layout.addWidget(self.font_size_widget)
+
+        self.font_size_label = QLabel(self.font_size_widget)
+        self.font_size_label.setText('Font size:')
+        self.font_settings_layout.addWidget(self.font_size_label)
+
+        self.font_size_minus = QPushButton(self.font_size_widget)
+        self.font_size_minus.setText('-')
+        self.font_size_minus.clicked.connect(self.decreaseFontSize)
+        self.font_settings_layout.addWidget(self.font_size_minus)
+
+        self.font_size_combo = QComboBox(self.font_size_widget)
+        self.font_size_combo.addItems(['10', '12', '14', '16', '18', '20', '22', '24', '26', '30'])
+        self.font_size_combo.setCurrentText(str(self.settings['font-size']))
+        self.font_size_combo.setEditable(True)
+        self.font_size_combo.currentTextChanged.connect(self.changeFontSize)
+        self.font_settings_layout.addWidget(self.font_size_combo)
+
+        self.font_size_plus = QPushButton(self.font_size_widget)
+        self.font_size_plus.setText('+')
+        self.font_size_plus.clicked.connect(self.increaseFontSize)
+        self.font_settings_layout.addWidget(self.font_size_plus)
+
+
+    def changeFontSize(self):
+        size = int(self.font_size_combo.currentText())
+        font = QFont()
+        font.setPointSize(size)
+        self.font_size_test_text.setFont(font)
+        self.settings['font-size'] = size
+        print('changed')
+
+    def increaseFontSize(self):
+        size = int(self.font_size_combo.currentText())
+        size += 1
+        self.font_size_combo.setEditText(str(size))
+
+    def decreaseFontSize(self):
+        size = int(self.font_size_combo.currentText())
+        size -= 1
+        self.font_size_combo.setEditText(str(size))
+
+    def changeFontFamily(self):
+        family = self.font_family_combo.currentText()
+        font = QFont()
+        font.setFamily(family)
+        self.font_size_test_text.setFont(font)
+        self.settings['font-family'] = family
 
 ################################## LIBRARY PATH ###################################################
     def libraryPathSettings(self):
@@ -106,7 +188,6 @@ class Settings(QWidget):
         self.library_path_button.clicked.connect(self.changeLibraryPath)
         self.library_path_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.library_path_layout.addWidget(self.library_path_button, 1, 2)
-        print('pass')
 
 
     def changeLibraryPath(self):

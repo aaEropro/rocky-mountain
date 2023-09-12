@@ -51,6 +51,23 @@ class SettingsMasterStn:
 
         else:
             raise Exception(f'the variable type {type(topic)} is not supported for subscription.')
+        
+    
+    @classmethod
+    def unsubscribe(cls, topic:list|str, fn) -> None:
+        if type(topic) == str:
+            if topic not in cls.topics:
+                return
+            if fn not in cls.subscribers[topic]:
+                return
+            cls.subscribers[topic].remove(fn)
+
+        elif type(topic) == list:
+            for item in topic:
+                cls.unsubscribe(item , fn)
+
+        else:
+            raise Exception(f'the variable type {type(topic)} is not supported for unsubscription.')
 
 
     @classmethod

@@ -9,8 +9,8 @@ class GMDParser():
         stag_styles = config['speech']
 
         #:: : build body stylesheet
-        self.stylesheet = f'''style="font-family:{body_styles['font-family']}; font-size:{body_styles['font-size']}" align="{body_styles['align']}"'''
-        self.break_stylesheet = f'''style="font-family:{body_styles['font-family']}; font-size:{int(body_styles['font-size'][:2])+5}px; font-weight:bold" align="center"'''
+        self.stylesheet = f'''style="font-family:{body_styles['font-family']}" align="{body_styles['align']}"'''
+        self.break_stylesheet = f'''style="font-family:{body_styles['font-family']}; font-weight:bold" align="center"'''
 
         #::: build tags stylesheet dict
         self.tags_dict = {}

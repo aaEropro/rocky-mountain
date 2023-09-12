@@ -146,5 +146,7 @@ class EditorWindow(QStackedWidget):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         self.atExit()
+        self.editor.close()
         atexit.unregister(self.atExit)
+
         super().closeEvent(event)
