@@ -38,6 +38,7 @@ class TitleBar(QWidget):
         self.h_size = 36
         self.window_instance:QMainWindow = None
         self.start_move_pos:QPoint = QPoint()
+        self._window_normal_size:QRect = QRect()
         stylesheet = '''
             QWidget, QLabel
             {
@@ -174,6 +175,7 @@ class TitleBar(QWidget):
         if self.window_instance.isMaximized():
             self.window_instance.showNormal()
         else:
+            self._window_normal_size = self.window_instance.frameGeometry()
             self.window_instance.showMaximized()
 
 
@@ -191,20 +193,48 @@ class TitleBar(QWidget):
             event.accept()
 
 
+    # def mouseMoveEvent(self, event):
+    #     if (event.buttons() == Qt.LeftButton) and (self.title_label.geometry().contains(event.position().toPoint())):  # Updated this line
+    #         if self.window_instance.isMaximized():
+    #             self.window_instance.showNormal()
+
+    #             topbar_middle = QPoint(self.window_instance.width()/2, self.height()/2)
+    #             diff = event.globalPosition().toPoint() - QPoint(self.window_instance.width()/2, self.height()/2)
+    #             self.window().move(self.window().pos() + diff)
+    #             self.start_move_pos = event.globalPosition().toPoint()
+    #             event.accept()
+    #         else:
+    #             diff = event.globalPosition().toPoint() - self.start_move_pos
+    #             self.window().move(self.window().pos() + diff)
+    #             self.start_move_pos = event.globalPosition().toPoint()
+    #             event.accept()
+
+
     def mouseMoveEvent(self, event):
-        if (event.buttons() == Qt.LeftButton) and (self.title_label.geometry().contains(event.position().toPoint())):  # Updated this line
+        if (event.buttons() == Qt.LeftButton) and (self.title_label.geometry().contains(event.position().toPoint())):
+
+            # If the window is maximized, return to normal and adjust position
             if self.window_instance.isMaximized():
+                cursor_global_pos = event.globalPosition().toPoint()
                 self.window_instance.showNormal()
-                middle_width = self.window_instance.width()//2
-                diff = event.globalPosition().toPoint() - QPoint(middle_width, self.height()//2)
-                self.window().move(self.window().pos() + diff)
-                self.start_move_pos = event.globalPosition().toPoint()
-                event.accept()
+
+                # x = cursor_global_pos.x() - self._window_normal_size.width() / 2
+                x = cursor_global_pos.x() - self.window_instance.getNormalSize.width() / 2
+                y = cursor_global_pos.y() - self.title_label.height() / 2
+
+                self.window_instance.move(x, y)
+                self.start_move_pos = cursor_global_pos
+
             else:
                 diff = event.globalPosition().toPoint() - self.start_move_pos
                 self.window().move(self.window().pos() + diff)
                 self.start_move_pos = event.globalPosition().toPoint()
-                event.accept()
+
+            event.accept()
+
+
+
+
 
 
     def createButtons(self, icon_size:int=20):

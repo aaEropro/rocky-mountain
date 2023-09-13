@@ -33,6 +33,8 @@ class BookEditor(QTextEdit):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        self.setStyleSheet('border:none')
+
         self.responsive_context_menu = ResponsiveContextMenu(self)    # initiate the responsive context menu
         self.gmd_parser = GMDParser()    # initiate the GMD parser
 

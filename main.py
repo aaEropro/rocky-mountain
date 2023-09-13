@@ -99,16 +99,16 @@ class MainWindow(MainWindow):
         window_width = int(window_width); window_height = int(window_height)
         window_pos_x = int(window_pos_x); window_pos_y = int(window_pos_y)
 
-        if window_pos_x < 0: window_pos_x = 0    # check the window position to not be outside the screen
-        if window_pos_y < 0: window_pos_y = 0
+        if window_pos_x < 0 or window_pos_x >= 1920: window_pos_x = 0    # check the window position to not be outside the screen
+        if window_pos_y < 0 or window_pos_y >= 1080: window_pos_y = 0
 
         self.resize(window_width, window_height)    # resize the window
         self.move(window_pos_x, window_pos_y)    # move the window to the desired location
 
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        window_size = (self.size().width(), self.size().height())        # get window size
-        window_position = (self.pos().x(), self.pos().y())     # get window position
+        window_size = (self.getNormalSize.width(), self.getNormalSize.height())        # get window size
+        window_position = (self.geometry().x(), self.geometry().y())     # get window position
         
         SettingsMasterStn().setSpecific(topic='window-resolution', value=window_size)
         SettingsMasterStn().setSpecific(topic='window-position', value=window_position)

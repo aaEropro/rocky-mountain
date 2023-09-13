@@ -46,12 +46,29 @@ class ResponsiveContextMenu():
         self.tag_menu = QMenu('tags', self.context_menu)
         self.context_menu.addMenu(self.tag_menu)
 
-        self.add_left_tag = self.tag_menu.addAction('++ any   ')
-        self.add_left_tag.triggered.connect(lambda: self.addTag(-1))
-        self.add_double_tag = self.tag_menu.addAction('++ any ++')
-        self.add_double_tag.triggered.connect(lambda: self.addTag(0))
-        self.add_right_tag = self.tag_menu.addAction('      any ++')
-        self.add_right_tag.triggered.connect(lambda: self.addTag(1))
+        self.add_left_tag_menu = QMenu('++ any', self.tag_menu)
+        self.tag_menu.addMenu(self.add_left_tag_menu)
+        self.add_left_tag_dict = {}
+        for item in ['e', 'a', 's', 'q', 't', 'f']:
+            action = self.add_left_tag_menu.addAction(f'++ {item}   ')
+            action.triggered.connect(partial(self.addTag, -1, item))
+            self.add_left_tag_dict[item] = action
+
+        self.add_double_tag_menu = QMenu('++ any ++', self.tag_menu)
+        self.tag_menu.addMenu(self.add_double_tag_menu)
+        self.add_double_tag_dict = {}
+        for item in ['e', 'a', 's', 'q', 't', 'f']:
+            action = self.add_double_tag_menu.addAction(f'++ {item} ++')
+            action.triggered.connect(partial(self.addTag, 0, item))
+            self.add_double_tag_dict[item] = action
+
+        self.add_right_tag_menu = QMenu('any ++', self.tag_menu)
+        self.tag_menu.addMenu(self.add_right_tag_menu)
+        self.add_right_tag_dict = {}
+        for item in ['e', 'a', 's', 'q', 't', 'f']:
+            action = self.add_right_tag_menu.addAction(f'      {item} ++')
+            action.triggered.connect(partial(self.addTag, 1, item))
+            self.add_right_tag_dict[item] = action
 
         self.convert_tag_dict = {}
         for item in ['e', 'a', 's', 'q', 't', 'f']:
@@ -71,12 +88,24 @@ class ResponsiveContextMenu():
         self.trans_menu = QMenu('trans', self.context_menu)
         self.context_menu.addMenu(self.trans_menu)
 
-        self.add_left_trans = self.trans_menu.addAction('++ any   ')
-        self.add_left_trans.triggered.connect(lambda: self.addTrans(-1))
-        self.add_double_trans = self.trans_menu.addAction('++ any ++')
-        self.add_double_trans.triggered.connect(lambda: self.addTrans(0))
-        self.add_right_trans = self.trans_menu.addAction('      any ++')
-        self.add_right_trans.triggered.connect(lambda: self.addTrans(1))
+        self.add_left_trans_menu = QMenu('++ any   ', self.trans_menu)
+        self.trans_menu.addMenu(self.add_left_trans_menu)
+        self.add_left_trans_dict = {}
+        for item in ['h', 'u', 'a']:
+            action = self.add_left_trans_menu.addAction(f'-> {item}')
+            action.triggered.connect(partial(self.addTrans, -1, item))
+            self.add_left_trans_dict[item] = action
+
+        self.add_double_trans_menu = QMenu('++ any ++', self.trans_menu)
+        self.trans_menu.addMenu(self.add_double_trans_menu)
+        self.add_center_trans_dict = {}
+        for item in ['h', 'u', 'a']:
+            action = self.add_double_trans_menu.addAction(f'-> {item} <-')
+            action.triggered.connect(partial(self.addTrans, 0, item))
+            self.add_center_trans_dict[item] = action
+
+        self.add_right_trans_menu = self.trans_menu.addAction('      any ++')
+        self.add_right_trans_menu.triggered.connect(lambda: self.addTrans(1, ''))
 
         self.convert_trans_dict = {}
         for item in ['h', 'u', 'a']:
@@ -114,20 +143,22 @@ class ResponsiveContextMenu():
         self.editor.setFocus()
 
 
-    def addTag(self, position):
+    def addTag(self, position, tag):
         if position == -1:
-            self.word_unwrapped[2] = f'<e>'
+            self.word_unwrapped[2] = f'<{tag}>'
         if position == 1:
-            self.word_unwrapped[4] = f'</e>'
+            self.word_unwrapped[4] = f'</{tag}>'
         if position == 0:
-            self.word_unwrapped[2] = f'<e>'
-            self.word_unwrapped[4] = f'</e>'
+            self.word_unwrapped[2] = f'<{tag}>'
+            self.word_unwrapped[4] = f'</{tag}>'
         self.placeText()
 
 
     def convertTag(self, tag):
-        self.word_unwrapped[2] = f'<{tag}>'
-        self.word_unwrapped[4] = f'</{tag}>'
+        if self.word_unwrapped[2] != '':
+            self.word_unwrapped[2] = f'<{tag}>'
+        if self.word_unwrapped[4] != '':
+            self.word_unwrapped[4] = f'</{tag}>'
         self.placeText()
 
 
@@ -142,19 +173,20 @@ class ResponsiveContextMenu():
         self.placeText()
 
 
-    def addTrans(self, position):
+    def addTrans(self, position, tag):
         if position == -1:
-            self.word_unwrapped[1] = f'[h|'
+            self.word_unwrapped[1] = f'[{tag}|'
         if position == 1:
             self.word_unwrapped[6] = f']'
         if position == 0:
-            self.word_unwrapped[1] = f'[h|'
+            self.word_unwrapped[1] = f'[{tag}|'
             self.word_unwrapped[6] = f']'
         self.placeText()
 
 
     def convertTrans(self, tag):
-        self.word_unwrapped[1] = f'[{tag}|'
+        if self.word_unwrapped[1] != '':
+            self.word_unwrapped[1] = f'[{tag}|'
         self.placeText()
 
 
