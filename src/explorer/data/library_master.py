@@ -3,6 +3,7 @@ import zipfile
 from configobj import ConfigObj
 from src.settings.data.settings_master import SettingsMasterStn
 import zlib
+import shutil
 
 
 
@@ -76,6 +77,7 @@ class LibraryMasterStn():
         with open(os.path.join(cls.cache_path, cover_in_cache_name), 'rb') as png:
             cover_in_cache_crc = zlib.crc32(png.read()) & 0xffffffff    # ensure it's a positive value
         if cover_in_archive_crc != cover_in_cache_crc:
+            os.remove(os.path.join(cls.cache_path, cover_in_cache_name))
             cls.cacheCover(book, book_name)
     
 

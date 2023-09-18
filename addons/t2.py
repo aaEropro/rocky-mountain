@@ -1,266 +1,160 @@
-from PySide6.QtCore import *
-import PySide6.QtCore
-from PySide6.QtGui import *
-import PySide6.QtGui
-from PySide6.QtWidgets import *
 import sys
-from addons.png_icon_manipulation import colorizeImage, resizeImage
-import os
-from addons.main_window import MainWindow
+from typing import Optional
+from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QLabel, QListWidget, QListWidgetItem
+from PySide6.QtCore import Signal
 
 
-class SquareClickableLabel(QLabel):
-    clicked = Signal()
+################################## ITEMS ##########################################################
+class BaseItem(QWidget):
+    open_item_in_editor = Signal(str)
+    removeSignal = Signal(object)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name):
+        super().__init__()
+        self.master_layout = QHBoxLayout(self)
 
+        self.label = QLabel(name)
+        self.master_layout.addWidget(self.label)
 
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        self.clicked.emit()
-        return True
+    def getText(self):
+        return self.label.text()
 
+    def openInEditor(self):
+        self.open_item_in_editor.emit(self.label.text())
 
-    def resizeEvent(self, event):
-        side = min(self.width(), self.height())
-        self.setFixedSize(side, side)
-
-
-class ClickableLabel(QLabel):
-    clicked = Signal()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def deleteItem(self):
+        self.removeSignal.emit(self)
 
 
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        self.clicked.emit()
-        return True
-    
-    def setHover(self):
-        self.setStyleSheet('''
-            QLabel:hover
-            {
-                background-color: rgb(70, 69, 69);
-            }''')
+class ItemInList(BaseItem):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+        self.button = QPushButton("Remove from list")
+        self.button.clicked.connect(self.deleteItem)
+        self.layout().addWidget(self.button)
+
+        self.button2 = QPushButton("show")
+        self.button2.clicked.connect(self.openInEditor)
+        self.layout().addWidget(self.button2)
 
 
-class TitleBar(QWidget):
+class ItemOutList(BaseItem):
+    restoreSignal = Signal(object)
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.restore_button = QPushButton("Restore in list")
+        self.restore_button.clicked.connect(self.restoreItem)
+        self.layout().addWidget(self.restore_button)
+
+        self.delete_button = QPushButton("Delete forever")
+        self.delete_button.clicked.connect(self.deleteItem)
+        self.layout().addWidget(self.delete_button)
+
+        self.open_in_editor = QPushButton("show")
+        self.open_in_editor.clicked.connect(self.openInEditor)
+        self.layout().addWidget(self.open_in_editor)
+
+    def restoreItem(self):
+        self.restoreSignal.emit(self)
+
+################################## LISTS ##########################################################
+class BaseList(QListWidget):
+    open_item_in_editor = Signal(str)
+
+    def __init__(self):
+        super().__init__()
+        self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+
+    def addItemWidgets(self, names:list):
+        ''' add a series of objects. `names` is a list containing the text displayed for each item. '''
+        for item in names:
+            self.addItemWidget(item)
+
+    def addItemWidget(self, name):
+        ''' placeholder function. needs to be overidden. '''
+        pass
+
+    def scrapItem(self, obj:ItemInList):
+        ''' removes the item `obj` from the list. '''
+        for index in range(self.count()):
+            if self.itemWidget(self.item(index)) == obj:
+                self.takeItem(index)
+                break
+
+
+class InOrder(BaseList):
+    moveToOutOrderSignal = Signal(str)
 
     def __init__(self):
         super().__init__()
 
-        self.h_size = 36
-        self.window_instance:QMainWindow = None
-        self.start_move_pos:QPoint = QPoint()
-        stylesheet = '''
-            QWidget, QLabel
-            {
-                background-color: rgb(33, 32, 32);
-            }
-        '''
+    def addItemWidget(self, name):
+        ''' add one object. `name` is the text displayed. '''
+        item = QListWidgetItem(self)
+        custom_widget = ItemInList(name)
+        custom_widget.removeSignal.connect(self.scrapItem)
+        custom_widget.open_item_in_editor.connect(self.open_item_in_editor.emit)
+        item.setSizeHint(custom_widget.sizeHint())
+        self.addItem(item)
+        self.setItemWidget(item, custom_widget)
+
+    def removeItem(self, obj:ItemInList):
+        ''' sends the item text trough `moveToOutOrderSignal` and removes the item from list. '''
+        item_text = obj.getText()
+        self.scrapItem(obj)
+        self.moveToOutOrderSignal.emit(item_text)
 
 
-        self.hbox_layout = QHBoxLayout(self)
-        self.hbox_layout.setSpacing(0)
-        self.hbox_layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self.hbox_layout)
-        self.setStyleSheet(stylesheet)
+class OutOrder(BaseList):
+    restore_item = Signal(str)
 
-
-        self.logo_widget = QWidget(self)
-        self.logo_widget.setLayout(QHBoxLayout(self.logo_widget))
-        self.logo_widget.layout().setContentsMargins(4, 0, 4, 0)
-        self.logo_widget.layout().setSpacing(0)
-        self.hbox_layout.addWidget(self.logo_widget)
-        self.logo_label = QLabel(self.logo_widget)    # left corner logo
-        self.logo_pixmap = QPixmap(os.path.join('logos', 'rm_logo.png'))
-        self.logo_pixmap = self.logo_pixmap.scaled(self.h_size, self.h_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.logo_label.setPixmap(self.logo_pixmap)
-        self.logo_widget.layout().addWidget(self.logo_label)
-
-
-        self.menus_widget = QWidget(self)
-        self.menu_layout = QHBoxLayout(self.menus_widget)
-        self.menu_layout.setContentsMargins(0, 0, 0, 0)
-        self.menu_layout.setSpacing(0)
-        self.menus_widget.setLayout(self.menu_layout)
-        self.hbox_layout.addWidget(self.menus_widget)
-
-
-        self.title_label = QLabel(self)
-        self.title_label.setAlignment(Qt.AlignCenter | Qt.AlignCenter)
-        self.title_label.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-        self.hbox_layout.addWidget(self.title_label)
-
-
-        self.window_buttons_widget = QWidget(self)
-        self.window_buttons_layout = QHBoxLayout(self.window_buttons_widget)
-        self.window_buttons_layout.setContentsMargins(0, 0, 0, 0)
-        self.window_buttons_layout.setSpacing(0)
-        self.window_buttons_widget.setLayout(self.window_buttons_layout)
-        self.hbox_layout.addWidget(self.window_buttons_widget)
-
-
-        # self.logo_widget.setStyleSheet('background:red')
-        # self.logo_label.setStyleSheet('background:purple')
-        # self.menus_widget.setStyleSheet('background:green')
-        # self.title_label.setStyleSheet('background:blue')
-        # self.window_buttons_widget.setStyleSheet('background:magenta')
-
-
-        self.createWindowManipulation()
-        self.createButtons()
-
-
-    def setWindowInstance(self, instance:QMainWindow) -> None:
-        ''' sets the main window instance. '''
-        self.window_instance = instance
-
-
-    def setTitle(self, title:str) -> None:
-        self.title_label.clear()
-        self.title_label.setText(title)
-
-    
-    def setTitleFont(self, font:QFont) -> None:
-        ''' set the font of the title. '''
-        self.title_label.setFont(font)
-
-
-    def createWindowManipulation(self, icon_size:int=28, color:QColor=QColor(206, 206, 206)) -> None:
-        ''' creates the minimize, maximize and close window buttons. '''
-        icon_size = QSize(icon_size, icon_size)
-
-        min_icon = colorizeImage(QPixmap(os.path.join('icons', 'minimize.png')), color)
-        min_icon = resizeImage(min_icon, icon_size)
-        max_icon = colorizeImage(QPixmap(os.path.join('icons', 'maximize.png')), color)
-        max_icon = resizeImage(max_icon, icon_size)
-        close_icon = colorizeImage(QPixmap(os.path.join('icons', 'close.png')), color)
-        close_icon = resizeImage(close_icon, icon_size)
-
-        self.minimize_button = ClickableLabel(self.window_buttons_widget)
-        self.minimize_button.setFixedSize(self.h_size, self.h_size)
-        self.minimize_button.setStyleSheet("background-color: green;")
-        self.minimize_button.setAlignment(Qt.AlignCenter|Qt.AlignCenter)
-        self.minimize_button.setPixmap(min_icon)
-        self.minimize_button.setHover()
-        self.minimize_button.clicked.connect(self.toggleMinimized)
-        self.window_buttons_layout.addWidget(self.minimize_button)
-
-
-        self.maximize_button = ClickableLabel(self.window_buttons_widget)
-        self.maximize_button.setFixedSize(self.h_size, self.h_size)
-        self.maximize_button.setStyleSheet("background-color: blue;")
-        self.maximize_button.setAlignment(Qt.AlignCenter|Qt.AlignCenter)
-        self.maximize_button.setPixmap(max_icon)
-        self.maximize_button.setHover()
-        self.maximize_button.clicked.connect(self.toggleMaximized)
-        self.window_buttons_layout.addWidget(self.maximize_button)
-
-
-        self.close_button = ClickableLabel(self.window_buttons_widget)
-        self.close_button.setFixedSize(self.h_size, self.h_size)
-        self.close_button.setStyleSheet("background-color: green;")
-        self.close_button.setAlignment(Qt.AlignCenter|Qt.AlignCenter)
-        self.close_button.setPixmap(close_icon)
-        self.close_button.clicked.connect(self.closeWindow)
-        self.close_button.setStyleSheet("QLabel:hover{background-color: red;}")
-        self.window_buttons_layout.addWidget(self.close_button)
-
-
-    def toggleMinimized(self):
-        if self.window_instance is None:
-            return
-        
-        if self.window_instance.isMinimized():
-            self.window_instance.showNormal()
-        else:
-            self.window_instance.showMinimized()
-
-
-    def toggleMaximized(self):
-        if self.window_instance is None:
-            return
-        
-        if self.window_instance.isMaximized():
-            self.window_instance.showNormal()
-        else:
-            self.window_instance.showMaximized()
-
-
-    def closeWindow(self):
-        if self.window_instance is None:
-            return
-        
-        self.window_instance.close()
-
-
-    def mousePressEvent(self, event):
-        # Check if the event occurred within the title_label's geometry
-        if event.button() == Qt.LeftButton and self.title_label.geometry().contains(event.position().toPoint()):  # Updated this line
-            self.start_move_pos = event.globalPosition().toPoint()
-            event.accept()
-
-
-    def mouseMoveEvent(self, event):
-        if (event.buttons() == Qt.LeftButton) and (self.title_label.geometry().contains(event.position().toPoint())):  # Updated this line
-            if self.window_instance.isMaximized():
-                self.window_instance.showNormal()
-                middle_width = self.window_instance.width()//2
-                diff = event.globalPosition().toPoint() - QPoint(middle_width, self.height()//2)
-                self.window().move(self.window().pos() + diff)
-                self.start_move_pos = event.globalPosition().toPoint()
-                event.accept()
-            else:
-                diff = event.globalPosition().toPoint() - self.start_move_pos
-                self.window().move(self.window().pos() + diff)
-                self.start_move_pos = event.globalPosition().toPoint()
-                event.accept()
-
-
-    def createButtons(self, icon_size:int=30):
-        size = self.h_size-self.menu_layout.contentsMargins().top()-self.menu_layout.contentsMargins().bottom()
-        if size < icon_size:
-            icon_size = size
-        icon_size = QSize(icon_size, icon_size)
-        print(size, self.h_size)
-        stylesheet = '''
-            QLabel
-            {
-                background-color: rgb(33, 32, 32);
-            }
-            QLabel:hover
-            {
-                background-color: rgb(70, 69, 69);
-            }
-        '''
-        settings_icon = colorizeImage(QPixmap(os.path.join('icons', 'icons8-settings-96.png')), QColor(206, 206, 206))
-        settings_icon = resizeImage(settings_icon, icon_size)
-
-        self.settings_button = ClickableLabel()
-        self.settings_button.setFixedSize(size, size)
-        self.settings_button.setPixmap(settings_icon)
-        self.settings_button.setHover()
-        self.settings_button.setAlignment(Qt.AlignLeft|Qt.AlignCenter)
-        self.menu_layout.addWidget(self.settings_button)
-
-
-
-
-class MainApp(MainWindow):
     def __init__(self):
         super().__init__()
 
-        self.resize(850, 100)
+    def addItemWidget(self, name):
+        print('got here')
+        item = QListWidgetItem(self)
+        custom_widget = ItemOutList(name)
+        custom_widget.restoreSignal.connect(self.restoreItem)
+        custom_widget.removeSignal.connect(self.scrapItem)
+        custom_widget.open_item_in_editor.connect(self.open_item_in_editor.emit)
+        item.setSizeHint(custom_widget.sizeHint())
+        self.addItem(item)
+        self.setItemWidget(item, custom_widget)
 
-        self.title_bar = TitleBar()
-        self.title_bar.setWindowInstance(self)
-        self.setTitleBar(self.title_bar)
+    def restoreItem(self, obj:ItemOutList):
+        item_text = obj.getText()
+        self.scrapItem(obj)
+        self.restore_item.emit(item_text)
+
+################################## MAIN ###########################################################
+class ChapterNavigation(QWidget):
+
+    def __init__(self, parent:QWidget|None=None) -> None:
+        super().__init__(parent)
+
+        self.main_layout = QVBoxLayout(self)
+
+        self.inorder_widget = InOrder()
+        self.inorder_widget.addItemWidgets(['Item 1', 'Item 2', 'Item 3', 'Item 4'])
+        self.inorder_widget.open_item_in_editor.connect(self.openInEditor)
+        self.main_layout.addWidget(self.inorder_widget)
+
+        self.outorder_widget = OutOrder()
+        self.outorder_widget.open_item_in_editor.connect(self.openInEditor)
+        self.inorder_widget.moveToOutOrderSignal.connect(self.outorder_widget.addItemWidget)
+        self.outorder_widget.restore_item.connect(self.inorder_widget.addItemWidget)
+        self.main_layout.addWidget(self.outorder_widget)
+
+    def openInEditor(self, text):
+        print(f'Opened in editor {text}')
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainApp()
-    window.show()
-    sys.exit(app.exec())
+
+app = QApplication(sys.argv)
+instamce = ChapterNavigation()
+instamce.show()
+app.exec()

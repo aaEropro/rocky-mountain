@@ -7,12 +7,12 @@ import atexit
 
 from addons import cutils
 from src.settings.data.settings_master import SettingsMasterStn
-from src.editor.data.book_master import BookMaster
+from src.editor.data.book_master_3 import BookMaster
 
 from src.editor.ui.book_editor import BookEditor
 from src.editor.ui.status_bar import StatusBar
 from src.editor.ui.buttons_bar import ButtonsBar
-from src.editor.ui.chapter_navigation import BookNavigation
+from src.editor.ui.chapter_navigation_3 import BookNavigation
 from src.editor.ui.metadata_editor import MetadataEditor
 
 
@@ -107,6 +107,7 @@ class EditorWindow(QStackedWidget):
 ################################## METADATA #######################################################
     def switchToMetadataOverlay(self) -> None:
         metadata = self.bookmaster.getMetadata()
+
         metadata_editor = MetadataEditor(self)
         metadata_editor.loadMetadata(metadata)
         metadata_editor.save.connect(self.exitMetadataOverlay)
@@ -121,23 +122,89 @@ class EditorWindow(QStackedWidget):
         self.status_bar.showLeftMessage(f'chapter {metadata["number"]}: {metadata["title"]} - {split}', timer=None, override=True)
 
 ################################## CHAPTER NAVIGATION #############################################
+    # def switchToBookNavigationPage(self) -> None:
+    #     book_navigation = BookNavigation(self.bookmaster)    # initiate book navigation
+    #     book_navigation.exit_navigation_signal.connect(self.exitBookNavigationPage)
+    #     self.addWidget(book_navigation)
+    #     self.setCurrentWidget(book_navigation)    # bring the book navigation page to the top
+
+
+    # def exitBookNavigationPage(self, navigation_obj:QWidget, selected_split:str|None) -> None:
+    #     navigation_obj.close()
+    #     navigation_obj.deleteLater()
+
+    #     if selected_split is not None:
+    #         self.bookmaster.setSplit(selected_split)
+    #         self.loadTextToEditor()
+
+    #     self.checkScrollPosition()    # force a check on the prev/next buttons
+    #     self.setCurrentWidget(self.master_widget)
+
+    # def switchToBookNavigationPage(self) -> None:
+    #     listed, unlisted = self.bookmaster.getAll()
+
+    #     listed_data = []
+    #     for item in listed:
+    #         listed_data.append([item, item])
+    #     unlisted_data = []
+    #     for item in unlisted:
+    #         unlisted_data.append([item, item])
+
+    #     book_navigation = ChapterNavigation()
+    #     book_navigation.loadChapters(listed_data, unlisted_data)
+    #     book_navigation.on_exit.connect(self.exitBookNavigationPage)
+    #     self.addWidget(book_navigation)
+
+    #     self.setCurrentWidget(book_navigation)    # bring the book navigation page to the top
+
+
+    # def exitBookNavigationPage(self, navigation_obj:QWidget, inorder_filenames:list, outorder_filenames:list, deleted_filenames:list, opened_filename:str|None=None) -> None:
+    #     navigation_obj.close()
+    #     navigation_obj.deleteLater()
+
+    #     self.bookmaster.setInorder(inorder_filenames)
+    #     self.bookmaster.setOutorder(outorder_filenames)
+    #     self.bookmaster.setDeleted(deleted_filenames)
+
+    #     if opened_filename is None:
+    #         current = self.bookmaster.getCurrent()
+    #         if self.bookmaster.isInorder(current):
+    #             print('all ok')
+    #         else:
+    #             print('old split has been deleted, redirecting...')
+    #             new = self.bookmaster.getAtIndex(0)
+    #             self.bookmaster.setSplit(new)
+    #             self.loadTextToEditor()
+    #     else:
+    #         print('opening new split...')
+    #         self.bookmaster.setSplit(opened_filename)
+    #         self.loadTextToEditor()
+
+    #     self.checkScrollPosition()    # force a check on the prev/next buttons
+    #     self.setCurrentWidget(self.master_widget)
+
+
     def switchToBookNavigationPage(self) -> None:
-        book_navigation = BookNavigation(self.bookmaster)    # initiate book navigation
-        book_navigation.exit_navigation_signal.connect(self.exitBookNavigationPage)
-        self.addWidget(book_navigation)
-        self.setCurrentWidget(book_navigation)    # bring the book navigation page to the top
+        splits = self.bookmaster.getSplits()
+        current = self.bookmaster.getCurrent()
 
+        book_navigation = BookNavigation(self)
+        book_navigation.loadChapters(splits, current)
+        book_navigation.exit.connect(self.exitBookNavigationPage)
+        book_navigation.show()
+        book_navigation.setFocus()
 
-    def exitBookNavigationPage(self, navigation_obj:QWidget, selected_split:str|None) -> None:
+    def exitBookNavigationPage(self, navigation_obj:QWidget, selected) -> None:
         navigation_obj.close()
         navigation_obj.deleteLater()
 
-        if selected_split is not None:
-            self.bookmaster.setSplit(selected_split)
+        if selected is None:
+            print('same old split.')
+            return
+        else:
+            print('opening new split...')
+            self.bookmaster.setSplit(selected)
             self.loadTextToEditor()
-
-        self.checkScrollPosition()    # force a check on the prev/next buttons
-        self.setCurrentWidget(self.master_widget)
 
 
 ################################## CLOSE ##########################################################

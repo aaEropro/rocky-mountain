@@ -20,7 +20,6 @@ class BookMaster(QObject):
         super().__init__(parent)
 
         self.path_to_book = None
-        self.split_order = None
         self.current_split = None
         self.unzipped_book = None
         self.first_load = True
@@ -72,96 +71,60 @@ class BookMaster(QObject):
         setup_ini_content = self.unzipped_book.getFileContents('setup.ini')
         self.setup = ConfigObj(setup_ini_content)
 
-        order_ini_content = self.unzipped_book.getFileContents('order.ini')
-        self.order = ConfigObj(order_ini_content)
-        files_existent_in_order = self.order['files-order']
-
         files_in_zip = self.unzipped_book.getFileNames()
-        all_split_files = []
+        self.splits = []
         for item in files_in_zip:
             if ('split' in item) and item.endswith('.gmd'):
-                all_split_files.append(item)
-
-        for file in files_existent_in_order:    # verify all the splits exist
-            if file in files_in_zip:
-                all_split_files = [item for item in all_split_files if item != file]    # removes the current file
-            else:
-                raise Exception(f'the {file} file from order.ini does not exist')
-
-        self.split_not_present_in_order = []
-        file_str = ''
-        if len(all_split_files) > 0:
-            for file in all_split_files:
-                self.split_not_present_in_order.append(file)
-                file_str += file + ', '
-        if len(self.split_not_present_in_order) > 0:
-            print(f'Warning: file(s) {file_str[:-2]} is not present in split order list. you should look into that.')
-        self.split_order = files_existent_in_order    # load splits order to global memory
+                self.splits.append(item)
 
 
 ################################ SPLIT CHECKING ###############################################
     def isNext(self) -> bool:
         ''' returns `True` if there is a next split, else `False`. '''
-        current_index = self.split_order.index(self.current_split)
-        if current_index+1 < len(self.split_order):
+        current_index = self.splits.index(self.current_split)
+        if current_index+1 < len(self.splits):
             return True
         return False
     
     def isPrevious(self) -> bool:
         ''' returns `True` if there is a previous split, else `False`. '''
-        current_index = self.split_order.index(self.current_split)
+        current_index = self.splits.index(self.current_split)
         if current_index-1 >= 0:
             return True
         return False
 
-
-
-
-
-
-
-
-
-
-
+################################## SETTERS ########################################################
     def setStartpoint(self) -> None:
         last_read_split = self.setup['last-read']['split']
-        if last_read_split not in self.split_order:
-            last_read_split = self.split_order[0]
+        if last_read_split not in self.splits:
+            raise Exception(f'no such startpoint split {last_read_split}')
         self.current_split = last_read_split
-
     
     def setNext(self):
         self.split_timer.stop()
         self.saveSplit()
-        current_index = self.split_order.index(self.current_split)
-        self.current_split = self.split_order[current_index+1]
+        current_index = self.splits.index(self.current_split)
+        self.current_split = self.splits[current_index+1]
         print(f'stopped timer, split switch to next, current {self.current_split}')
 
     def setPrevious(self):
         self.split_timer.stop()
         self.saveSplit()
-        current_index = self.split_order.index(self.current_split)
-        self.current_split = self.split_order[current_index-1]
+        current_index = self.splits.index(self.current_split)
+        self.current_split = self.splits[current_index-1]
         print(f'stopped timer, split switch to previous, current {self.current_split}')
     
     def setSplit(self, split_name:str):
-        if (split_name not in self.split_order) and (split_name not in self.split_not_present_in_order):
-            return
+        if split_name not in self.splits:
+            raise Exception(f'no such split {split_name}')
         self.split_timer.stop()
         self.saveSplit()
         self.current_split = split_name
         print(f'stopped timer, split switch to custom, current {self.current_split}')
 
-    def getOrdered(self) -> list:
-        return self.split_order
-    
-    def getFree(self) -> list:
-        return self.split_not_present_in_order
-    
-    def getAll(self) -> list[str]:
-        ''' returns inorder list and outorder list. '''
-        return self.split_order, self.split_not_present_in_order
+################################## GETTERS #######################################################
+    def getSplits(self) -> list:
+        return self.splits
     
     def getBody(self) -> str:
         contents = self.unzipped_book.getFileContents(self.current_split, '', mode='string')
@@ -186,37 +149,6 @@ class BookMaster(QObject):
 
     def getCurrent(self):
         return self.current_split
-    
-    def setInorder(self, inorder):
-        self.split_order = inorder
-
-    def setOutorder(self, outorder):
-        self.split_not_present_in_order = outorder
-
-    def setDeleted(self, deleted):
-        for item in deleted:
-            # self.unzipped_book.deleteFile(item)
-            pass
-
-    def removeSpecificSplit(self, split_name:str) -> None:    # removes a split from order
-        if split_name in self.split_order:
-            self.split_order.remove(split_name)
-            self.split_not_present_in_order.append(split_name)
-
-    def restoreSpecificSplit(self, split_name:str) -> None:    # restores a split from order
-        if split_name in self.split_not_present_in_order:
-            self.split_order.append(split_name)
-            self.split_not_present_in_order.remove(split_name)
-
-    def deleteSpecificSplit(self, split_name:str) -> None:    # removes a split from order
-        if split_name in self.split_not_present_in_order:
-            self.unzipped_book.deleteFile(split_name)
-            self.split_not_present_in_order.remove(split_name)
-
-    def isInorder(self, split_filename:str) -> bool:
-        if split_filename in self.split_order:
-            return True
-        return False
 
 
 ################################## SPLIT TIMER ####################################################
@@ -317,10 +249,6 @@ class BookMaster(QObject):
         self.setup['last-read']['cursor'] = cursor_position
         setup_ini_content = '\n'.join(self.setup.write())
         self.unzipped_book.setFileContents('setup.ini', setup_ini_content)
-
-        self.order['files-order'] = self.split_order
-        order_ini_content = '\n'.join(self.order.write())
-        self.unzipped_book.setFileContents('order.ini', order_ini_content)
 
         read_intervals_since_opened = self.getReadtimeIntervals()
         merged_read_times = self.old_read_intervals+read_intervals_since_opened

@@ -47,7 +47,7 @@ class Cover(QFrame):
                                             background-color: rgb(27, 27, 27);
                                             border: 1px solid rgb(27, 27, 27);
                                         }
-                                        QFrame QLabel {
+                                        QLabel {
                                             background-color: rgb(27, 27, 27);
                                             color: rgb(190, 189, 189);
                                             border: none;
@@ -59,7 +59,7 @@ class Cover(QFrame):
                                             border: 1px solid rgb(27, 27, 27);
                                             background-color: rgb(59, 58, 58);
                                         }
-                                        QFrame QLabel {
+                                        QLabel {
                                             color: rgb(190, 189, 189);
                                             border: none;
                                         }

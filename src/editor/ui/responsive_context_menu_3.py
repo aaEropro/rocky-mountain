@@ -99,7 +99,7 @@ class ResponsiveContextMenu():
         self.add_double_trans_menu = QMenu('++ any ++', self.trans_menu)
         self.trans_menu.addMenu(self.add_double_trans_menu)
         self.add_center_trans_dict = {}
-        for item in ['h', 'u', 'a']:
+        for item in ['0', 'h', 'u', 'a']:
             action = self.add_double_trans_menu.addAction(f'-> {item} <-')
             action.triggered.connect(partial(self.addTrans, 0, item))
             self.add_center_trans_dict[item] = action
