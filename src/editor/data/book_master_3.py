@@ -8,7 +8,6 @@ import time
 from addons.memory_zip import InMemoryZip
 
 
-
 class BookMaster(QObject):
     '''
         this class is designed to handle an RMB files. it checks for integrity and validates the file. 

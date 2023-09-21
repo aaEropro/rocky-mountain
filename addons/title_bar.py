@@ -5,7 +5,7 @@ import os
 
 from addons.png_icon_manipulation import colorizeImage, resizeImage
 
-
+DIR = os.path.dirname(os.path.abspath(__import__('__main__').__file__))
 
 class ClickableLabel(QLabel):
     clicked = Signal()
@@ -60,7 +60,7 @@ class TitleBar(QWidget):
         self.logo_widget.layout().setSpacing(0)
         self.hbox_layout.addWidget(self.logo_widget)
         self.logo_label = QLabel(self.logo_widget)    # left corner logo
-        self.logo_pixmap = QPixmap(os.path.join('assets', 'logos', 'rm_logo.png'))
+        self.logo_pixmap = QPixmap(os.path.join(DIR, 'assets', 'logos', 'rm_logo.png'))
         self.logo_pixmap = self.logo_pixmap.scaled(self.h_size, self.h_size, 
                                                    Qt.AspectRatioMode.KeepAspectRatio, 
                                                    Qt.TransformationMode.SmoothTransformation)
@@ -121,11 +121,11 @@ class TitleBar(QWidget):
         ''' creates the minimize, maximize and close window buttons. '''
         icon_size = QSize(icon_size, icon_size)
 
-        min_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'minimize.png')), color)
+        min_icon = colorizeImage(QPixmap(os.path.join(DIR, 'assets', 'icons', 'minimize.png')), color)
         min_icon = resizeImage(min_icon, icon_size)
-        max_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'maximize.png')), color)
+        max_icon = colorizeImage(QPixmap(os.path.join(DIR, 'assets', 'icons', 'maximize.png')), color)
         max_icon = resizeImage(max_icon, icon_size)
-        close_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'close.png')), color)
+        close_icon = colorizeImage(QPixmap(os.path.join(DIR, 'assets', 'icons', 'close.png')), color)
         close_icon = resizeImage(close_icon, icon_size)
 
         self.minimize_button = ClickableLabel(self.window_buttons_widget)
@@ -243,9 +243,9 @@ class TitleBar(QWidget):
             icon_size = size
         icon_size = QSize(icon_size, icon_size)
 
-        settings_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'icons8-settings-96.png')), QColor(206, 206, 206))
+        settings_icon = colorizeImage(QPixmap(os.path.join(DIR, 'assets', 'icons', 'icons8-settings-96.png')), QColor(206, 206, 206))
         settings_icon = resizeImage(settings_icon, icon_size)
-        home_icon = colorizeImage(QPixmap(os.path.join('assets', 'icons', 'home.png')), QColor(206, 206, 206))
+        home_icon = colorizeImage(QPixmap(os.path.join(DIR, 'assets', 'icons', 'home.png')), QColor(206, 206, 206))
         home_icon = resizeImage(home_icon, icon_size)
 
         self.home_button = ClickableLabel()

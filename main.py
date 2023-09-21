@@ -19,6 +19,7 @@ from src.explorer.data.library_master import LibraryMasterStn
 
 VERSION = '0.2.0'
 
+DIR = os.path.dirname(os.path.abspath(__import__('__main__').__file__))
 
 
 class MainWindow(MainWindow):
@@ -29,7 +30,7 @@ class MainWindow(MainWindow):
 
         self.current_widget = None
 
-        with open('dark_mode.css') as file:
+        with open(os.path.join(DIR, 'dark_mode.css')) as file:
             self.editor_window_dark_mode_styling = file.read()
         self.setStyleSheet(self.editor_window_dark_mode_styling)
 

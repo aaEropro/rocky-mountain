@@ -1,6 +1,11 @@
 from configobj import ConfigObj
 import copy
 import atexit
+import os
+
+
+
+DIR = os.path.dirname(os.path.abspath(__import__('__main__').__file__))
 
 
 
@@ -21,7 +26,7 @@ class SettingsMasterStn:
 
     @classmethod
     def atCreation(cls):
-        config = ConfigObj('settings.ini')
+        config = ConfigObj(os.path.join(DIR, 'settings.ini'))
         cls.settings_data = config.dict()
         cls.topics = cls.settings_data.keys()
         for item in cls.settings_data.keys():
@@ -31,7 +36,7 @@ class SettingsMasterStn:
     @classmethod
     def atExit(cls):
         config = ConfigObj(cls.settings_data)
-        config.filename = 'settings.ini'
+        config.filename = os.path.join(DIR, 'settings.ini')
         config.write()
 
 

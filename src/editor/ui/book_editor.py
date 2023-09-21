@@ -51,20 +51,17 @@ class BookEditor(QTextEdit):
 
         family = SettingsMasterStn().getSpecific('font-family')
         size = int(SettingsMasterStn().getSpecific('font-size'))
-        font = QFont()
-        font.setPointSize(size)
-        font.setFamily(family)
-
-        char_format = QTextCharFormat()
-        char_format.setFont(font)
-
         cursor = self.textCursor()
         position = cursor.position()
-        cursor.select(QTextCursor.Document)    # select all text in the document
+        cursor.select(QTextCursor.Document)
+        char_format = QTextCharFormat()
+        char_format.setFontFamily(family)
+        char_format.setFontPointSize(size)
         cursor.mergeCharFormat(char_format)
         cursor.clearSelection()
         cursor.setPosition(position)
         self.setTextCursor(cursor)
+
 
         self.textChanged.connect(self.onTextChanged, type=Qt.UniqueConnection)    # reconnect after making the changes
 
@@ -139,7 +136,6 @@ class BookEditor(QTextEdit):
 
         cursor = self.textCursor()   # get the current cursor position for reference
         cursor_pos = cursor.position()
-        print(cursor_pos)
 
         cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
         paragraph_text = cursor.selectedText()
@@ -147,7 +143,11 @@ class BookEditor(QTextEdit):
         cursor.removeSelectedText()
         cursor.insertHtml(to_html_paragraph_text)
 
-        char_format = self.getFontSettings()
+        current_font_family = self.getFontSettings().fontFamily()
+        current_font_size = self.getFontSettings().fontPointSize()
+        char_format = QTextCharFormat()
+        char_format.setFontFamily(current_font_family)
+        char_format.setFontPointSize(current_font_size)
         cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
         cursor.mergeCharFormat(char_format)
         cursor.clearSelection()

@@ -1,16 +1,20 @@
 from configobj import ConfigObj
 import os
 
+DIR = os.path.dirname(os.path.abspath(__import__('__main__').__file__))
+
+
 class GMDParser():
     def __init__(self):
-        config = ConfigObj(os.path.join('styles.ini'))
+        config = ConfigObj(os.path.join(DIR, 'styles.ini'))
         body_styles = config['body']
         tags_styles = config['tags']
         stag_styles = config['speech']
 
         #:: : build body stylesheet
-        self.stylesheet = f'''style="font-family:{body_styles['font-family']}" align="{body_styles['align']}"'''
-        self.break_stylesheet = f'''style="font-family:{body_styles['font-family']}; font-weight:bold" align="center"'''
+        self.stylesheet = f'''align="justify"'''
+        self.break_stylesheet = f'''style="font-weight:bold" align="center"'''
+        self.pause_stylesheet = f'''style="font-style:italic" align="center"'''
 
         #::: build tags stylesheet dict
         self.tags_dict = {}
@@ -70,7 +74,11 @@ class GMDParser():
         for index, para in enumerate(paragraphs):
             para = para.strip()
             if para == '&lt;break&gt;':
-                paragraphs[index] = f'<p {self.break_stylesheet}>{para}</h3>'
+                paragraphs[index] = f'<p {self.break_stylesheet}>{para}</p>'
+            elif '~break~' in para:
+                paragraphs[index] = f'<p {self.break_stylesheet}>{para}</p>'
+            elif '~pause~' in para:
+                paragraphs[index] = f'<p {self.pause_stylesheet}>{para}</p>'
             else:
                 paragraphs[index] = f'<p {self.stylesheet}>'+para+'</p>'
         body_text = '\n\n'.join(paragraphs)
@@ -85,10 +93,6 @@ class GMDParser():
         for item in [('&', '&amp;'), ('<', '&lt;'), ('>', '&gt;')]:     # replace HTML special characters with escape seq
             para = para.replace(item[0], item[1])
 
-        if '&lt;break&gt;' in para:
-            para = f'<p {self.break_stylesheet}>{para}</p>'
-            return para
-
         #::: add html for tags
         for _ in self.tags_dict:
             para = para.replace(self.tags_dict[_]['start_tag'], self.tags_dict[_]['html_start_tag']+self.tags_dict[_]['start_tag'])
@@ -99,7 +103,14 @@ class GMDParser():
             para = para.replace(self.stags_dict[_]['start_tag'], self.stags_dict[_]['html_start_tag']+self.stags_dict[_]['start_tag'])
             para = para.replace(self.stags_dict[_]['end_tag'], self.stags_dict[_]['end_tag']+self.stags_dict[_]['html_end_tag'])
 
-        para = f'<p {self.stylesheet}>'+para+'</p>'
+        if '&lt;break&gt;' in para:
+            para = f'<p {self.break_stylesheet}>{para}</p>'
+        elif '~break~' in para:
+            para = f'<p {self.break_stylesheet}>{para}</p>'
+        elif '~pause~' in para:
+            para = f'<p {self.pause_stylesheet}>{para}</p>'
+        else:
+            para = f'<p {self.stylesheet}>'+para+'</p>'
         return para
 
     def plaintext2gmd(plaintext:str) -> str:
