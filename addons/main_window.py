@@ -8,12 +8,18 @@ from addons.title_bar import TitleBar
     some code parts have been taken from @musicamante from StackOverflow: https://stackoverflow.com/a/62812752.
 '''
 
-
+class CornerGrip(QSizeGrip):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet('background: rgb(24, 24, 24);')
 
 class SideGrip(QWidget):
 
     def __init__(self, parent, edge):
         super().__init__(parent)
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet('background: rgb(24, 24, 24);')
 
         if edge == Qt.LeftEdge:
             self.setCursor(Qt.SizeHorCursor)
@@ -121,7 +127,7 @@ class MainWindow(QMainWindow):
         ]    # corner grips should be "on top" of everything, otherwise the side grips will take precedence on mouse events, 
              # so we are adding them *after*; alternatively, widget.raise_() can be used.
 
-        self.corner_grips = [QSizeGrip(self) for i in range(4)]
+        self.corner_grips = [CornerGrip(self) for i in range(4)]
 
     @property
     def gripSize(self):

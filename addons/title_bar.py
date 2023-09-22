@@ -42,7 +42,7 @@ class TitleBar(QWidget):
         stylesheet = '''
             QWidget, QLabel
             {
-                background-color: rgb(33, 32, 32);
+                background-color: rgb(24, 24, 24);
             }
         '''
 

@@ -99,6 +99,10 @@ class StatusBar(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        stylesheet = 'background:rgb(32, 32, 32);'
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet(stylesheet)
+
         self.main_layout = QHBoxLayout(self)    # create a new layout
         self.main_layout.setContentsMargins(0, 0, 0, 0)  # remove margins if desired
         self.main_layout.setSpacing(0)

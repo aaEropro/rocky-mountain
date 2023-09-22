@@ -74,6 +74,7 @@ class ResponsiveContextMenu():
         self.context_menu.setStyleSheet("""
             QMenu {
                 background-color: rgb(27, 27, 27);
+                color: rgb(209, 209, 209);
                 border: 1px solid rgb(42, 41, 41);
                 font-size: 20px;
             }
@@ -88,7 +89,7 @@ class ResponsiveContextMenu():
                 color: gray;
             }
             QMenu::item:selected {
-                background: rgba(0, 0, 255, 0.1);
+                background: rgb(123, 111, 202);
                 outline: 1px solid rgba(0, 0, 255, 0.5);
             }
         """)
@@ -153,7 +154,6 @@ class ResponsiveContextMenu():
     def transMenu(self):
         sorted_items = sorted(self.trans_usage.items(), key=lambda item: item[1], reverse=True)
         self.trans_usage = {k: int(v) for k, v in sorted_items}
-        print(self.trans_usage)
 
         self.trans_menu = QMenu('trans', self.context_menu)
         self.context_menu.addMenu(self.trans_menu)

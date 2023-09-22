@@ -3,7 +3,6 @@ import zipfile
 from configobj import ConfigObj
 from src.settings.data.settings_master import SettingsMasterStn
 import zlib
-import shutil
 
 
 
@@ -40,7 +39,6 @@ class LibraryMasterStn():
     @classmethod
     def atCreation(cls):
         library_path = SettingsMasterStn().getSpecific('library-path')
-        print(library_path)
 
         cls.library_path = library_path
         cls.cache_path = os.path.join(cls.library_path, 'cache')

@@ -3,6 +3,9 @@ import copy
 import atexit
 import os
 
+from src.logger.logger import logger
+log = logger.log
+
 
 
 DIR = os.path.dirname(os.path.abspath(__import__('__main__').__file__))
@@ -96,7 +99,7 @@ class SettingsMasterStn:
         for item in modified_settings:
             for fn in cls.subscribers[item]:
                 fn()
-        print(modified_settings)
+        log(f'modified: {modified_settings}', 'settings-master')
 
 
     @classmethod

@@ -50,22 +50,17 @@ class MainWindow(MainWindow):
         self.central_widget.addWidget(self.explorer_window)
         self.current_widget = self.explorer_window
 
-        self.createEditorWidget()
-
-
-    def createEditorWidget(self) -> None:
-        self.editor_window = EditorWindow()
-        self.central_widget.addWidget(self.editor_window)
-
 
     def loadBook(self, bookname:str) -> None:
+        self.editor_window = EditorWindow()
+        self.central_widget.addWidget(self.editor_window)
         self.editor_window.activate(os.path.join(SettingsMasterStn().getSpecific('library-path'), bookname))
 
         self.central_widget.setCurrentWidget(self.editor_window)
         self.current_widget = self.editor_window
 
-        author = LibraryMasterStn().getBookAuthor(bookname[:-4])
-        title = LibraryMasterStn().getBookTitle(bookname[:-4])
+        author = self.explorer_window.library_master.getBookAuthor(bookname[:-4])
+        title = self.explorer_window.library_master.getBookTitle(bookname[:-4])
         self.title_bar.setTitle(f'{author[0]} {author[1]}: {title}')
 
 
@@ -87,7 +82,6 @@ class MainWindow(MainWindow):
     def goHome(self):
         self.editor_window.close()
         self.editor_window.deleteLater()
-        self.createEditorWidget()
         self.title_bar.setTitle(f'Rocky Mountain - {VERSION}')
         self.current_widget = self.explorer_window
         self.central_widget.setCurrentWidget(self.explorer_window)

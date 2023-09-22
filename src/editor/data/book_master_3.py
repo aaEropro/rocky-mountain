@@ -7,6 +7,9 @@ import time
 
 from addons.memory_zip import InMemoryZip
 
+from src.logger.logger import logger
+log = logger.log
+
 
 class BookMaster(QObject):
     '''
@@ -65,7 +68,6 @@ class BookMaster(QObject):
         ''' loads necessary file to memory '''
         read_times_content = self.unzipped_book.getFileContents('read_times.json', mode='string')
         self.old_read_intervals = json.loads(read_times_content)['read-times']
-        # print(self.old_read_intervals)
 
         setup_ini_content = self.unzipped_book.getFileContents('setup.ini')
         self.setup = ConfigObj(setup_ini_content)
@@ -104,14 +106,14 @@ class BookMaster(QObject):
         self.saveSplit()
         current_index = self.splits.index(self.current_split)
         self.current_split = self.splits[current_index+1]
-        print(f'stopped timer, split switch to next, current {self.current_split}')
+        log(f'stopped timer, split switch to next, current {self.current_split}', 'split-navigation')
 
     def setPrevious(self):
         self.split_timer.stop()
         self.saveSplit()
         current_index = self.splits.index(self.current_split)
         self.current_split = self.splits[current_index-1]
-        print(f'stopped timer, split switch to previous, current {self.current_split}')
+        log(f'stopped timer, split switch to previous; current {self.current_split}', 'split-navigation')
     
     def setSplit(self, split_name:str):
         if split_name not in self.splits:
@@ -119,7 +121,7 @@ class BookMaster(QObject):
         self.split_timer.stop()
         self.saveSplit()
         self.current_split = split_name
-        print(f'stopped timer, split switch to custom, current {self.current_split}')
+        log(f'stopped timer, split switch to custom, current {self.current_split}', 'split-navigation')
 
 ################################## GETTERS #######################################################
     def getSplits(self) -> list:
@@ -158,7 +160,7 @@ class BookMaster(QObject):
 
     def activateSplitTimer(self):
         self.split_timer.start(20000)
-        print(f'timer activated on split {self.current_split}')
+        log(f'timer activated on split {self.current_split}', 'split-timer')
 
     def saveSplit(self):
         contents:str = self.parent().editor.toPlainText() # !!!!!!!! dont like that i have to link like this
@@ -170,7 +172,7 @@ class BookMaster(QObject):
         }
         json_str = json.dumps(json_dict)
         self.unzipped_book.setFileContents(self.current_split, json_str)
-        print(f'saved split {self.current_split}!')
+        log(f'saved split {self.current_split}!', 'split-timer')
         self.split_timer.start(20000)
 
 
@@ -191,38 +193,37 @@ class BookMaster(QObject):
         self.active_timer = True
         self.event_happened = False
         self.readtime_timer.start(120000)    # 2 min warmup
-        print('readtime timer warmup activated.')
+        log('readtime timer warmup activated.', 'readtime-timer')
 
     def presenceDetected(self):
         if (not self.active_timer) and (self.path_to_book is not None):
             self.activateReadtimeTimer()
         else:
             self.event_happened = True
-            # print('event happened')
 
     def readtimeTimeout(self):
         if self.warmup and self.event_happened:    # ended warmup and something happened inside the editor
             self.warmup = False
             self.event_happened = False
             self.readtime_timer.start(90000)    # 1.5 min pause between checks
-            print('ended warmup, event(s) happened, continuing...')
+            log('ended warmup, event(s) happened, continuing...', 'readtime-timer')
 
         elif self.warmup and (not self.event_happened):    # ended warmup and nothing happened inside the editor
             self.active_timer = False
             self.warmup = False
-            print('warmup failed, timeout.')
+            log('warmup failed, timeout.', 'readtime-timer')
 
         elif self.event_happened:    # ended timer and something happened inside the editor
             self.event_happened = False
             self.readtime_timer.start(90000)
-            print('event(s) happened, continuing...')
+            log('event(s) happened, continuing...', 'readtime-timer')
 
         else:    # ended timer and nothing happened inside the editor
             self.active_timer = False
             if self.start_time is not None:
                 self.read_intervals_since_opened.append((self.start_time, time.time()))
                 self.start_time = time.time()
-            print(f'timeout, {self.read_intervals_since_opened}')
+            log(f'timeout, {self.read_intervals_since_opened}', 'readtime-timer')
 
     def getReadtimeIntervals(self):
         if self.warmup:
@@ -240,7 +241,7 @@ class BookMaster(QObject):
 
     def activateArchiveTimer(self):
         self.archive_timer.start(60000)
-        # print('activated archive timer!')
+        log('activated archive timer!', 'archive-timer')
 
     def saveArchive(self):
         cursor_position = self.parent().editor.textCursor().position() # !!!!!!!! dont like that i have to link like this
@@ -257,12 +258,12 @@ class BookMaster(QObject):
 
         self.unzipped_book.save()
         self.archive_timer.start(60000)
-        print('saved archive!')
+        log('saved archive!', 'archive-timer')
 
 
 ##################################################################################################
     def close(self):
-        print('closing bookmaster!')
+        log('closing bookmaster!', 'bookmaster-exit')
         self.split_timer.stop()
         self.archive_timer.stop()
         self.readtime_timer.stop()

@@ -1,11 +1,14 @@
-from PySide6.QtWidgets import QWidget, QSizePolicy
+from PySide6.QtWidgets import QWidget, QSizePolicy, QPushButton, QVBoxLayout, QLabel
 from PySide6.QtCore import Signal
+from PySide6.QtGui import Qt
 from functools import partial
 
 from src.explorer.ui.cover import Cover
 from addons.flow_layout import FlowLayout
 from src.settings.data.settings_master import SettingsMasterStn
 
+
+from addons.overlay import OverlayWidget
 
 
 
@@ -16,12 +19,14 @@ class DisplayCase(QWidget):
 
     left_click = Signal(str)
     right_click = Signal(str)
+    select_library_path = Signal()
 
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.cover_size_constraints = (0, 0)
+        self.overlay = QWidget()
 
         self.flow_layout = FlowLayout(self)    # create flow layout
         self.flow_layout.setContentsMargins(20, 20, 20, 20)
@@ -30,6 +35,55 @@ class DisplayCase(QWidget):
         self.setLayout(self.flow_layout)    # set flow layout
 
         SettingsMasterStn().subscribe('cover-height', self.coverHeightChanged)
+        self.createLibraryButton()
+
+
+    def createLibraryButton(self):
+        stylesheet = '''
+            QPushButton
+            {
+                background-color: rgb(114, 103, 189);
+                color: rgb(209, 209, 209);
+                font-family: Consolas;
+                font-size: 13px;
+                border: none;
+                padding: 10;
+            }
+            QPushButton::hover
+            {
+                background-color: rgb(123, 111, 202);
+            }
+            QLabel
+            {
+                background-color: transparent;
+                color: rgb(209, 209, 209);
+                font-family: Consolas;
+                font-weight: bold;
+                font-size: 18px;
+            }
+        '''
+
+        self.overlay = OverlayWidget(self)
+        overlay_layout = QVBoxLayout(self.overlay)
+
+        widget = QWidget(self.overlay)
+        widget.setStyleSheet(stylesheet)
+        widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        overlay_layout.addWidget(widget)
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(30)
+
+        message = QLabel()
+        message.setText('you have not selected a library')
+        layout.addWidget(message, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        library_path_button = QPushButton()
+        library_path_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        library_path_button.setText('Select Library')
+        library_path_button.clicked.connect(self.select_library_path.emit)
+        layout.addWidget(library_path_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.overlay.show()
 
 
     def setBooks(self, books:list, size_constraints:tuple=(250,250)) -> None:
@@ -41,6 +95,8 @@ class DisplayCase(QWidget):
 
             ex: ('library\hilldiggers.png', 'Neal Asher: Hilldiggers', 'hildiggers.rmb') 
         '''
+        self.overlay.close()
+
         self.books = books
         self.cover_size_constraints = size_constraints
         self.renderCovers()

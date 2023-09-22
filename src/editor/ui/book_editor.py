@@ -9,6 +9,9 @@ from src.settings.data.settings_master import SettingsMasterStn
 
 from src.editor.ui.responsive_context_menu_3 import ResponsiveContextMenu
 
+from src.logger.logger import logger
+log = logger.log
+
 
 
 class BookEditor(QTextEdit):
@@ -207,7 +210,7 @@ class BookEditor(QTextEdit):
         cursor_paragraph_start_position, paragraph_under_cursor = self.getParagraphData()
         word, position_in_word = self.getWordUnderCursor(cursor_paragraph_start_position, paragraph_under_cursor)
         word_unwrapped = unwrapper.unwrap(word)
-        print(word_unwrapped)
+        log(word_unwrapped, 'word-unwrapped')
 
         cursor = self.textCursor()    # get the initial cursor position
         clicked_position = cursor.position()
@@ -225,6 +228,13 @@ class BookEditor(QTextEdit):
 
 
 ################################## EVENTS #########################################################
+    def mouseDoubleClickEvent(self, event:QEvent):
+        self.presence_detection_singnal.emit()
+        cursor = self.cursorForPosition(event.pos())    # get cursor at mouse click position
+        self.setTextCursor(cursor)    # update the cursor position
+        self.processWord(event)
+        return True
+
     def eventFilter(self, source, event):    # filter for clickes
         ''' add custome behaviour for clickes. '''
 
