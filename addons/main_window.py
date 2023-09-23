@@ -8,12 +8,18 @@ from addons.title_bar import TitleBar
     some code parts have been taken from @musicamante from StackOverflow: https://stackoverflow.com/a/62812752.
 '''
 
-
+class CornerGrip(QSizeGrip):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet('background: rgb(24, 24, 24);')
 
 class SideGrip(QWidget):
 
     def __init__(self, parent, edge):
         super().__init__(parent)
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet('background: rgb(24, 24, 24);')
 
         if edge == Qt.LeftEdge:
             self.setCursor(Qt.SizeHorCursor)
@@ -102,6 +108,9 @@ class MainWindow(QMainWindow):
         self.central_widget = None
         self.status_bar = None
 
+        self._normal_size:QSize = QSize()
+        self._normal_geometry:QRect = QRect()
+
         self.main_widget = QWidget(self)
         # self.main_widget.setStyleSheet('background:blue')
         self.main_layout = QVBoxLayout(self.main_widget)
@@ -118,18 +127,16 @@ class MainWindow(QMainWindow):
         ]    # corner grips should be "on top" of everything, otherwise the side grips will take precedence on mouse events, 
              # so we are adding them *after*; alternatively, widget.raise_() can be used.
 
-        self.corner_grips = [QSizeGrip(self) for i in range(4)]
+        self.corner_grips = [CornerGrip(self) for i in range(4)]
 
     @property
     def gripSize(self):
         ''' returns the size of the grips. '''
-
         return self._grip_size
 
 
     def setGripSize(self, size):
         ''' sets the size of the grips. '''
-    
         if size == self._grip_size:
             return
         self._grip_size = max(2, size)
@@ -138,7 +145,18 @@ class MainWindow(QMainWindow):
 
     def updateGrips(self):
         ''' updates the grip sizes. '''
+        if self.windowState() in (Qt.WindowState.WindowMaximized, Qt.WindowState.WindowFullScreen):  # Check if window is in fullscreen mode
+            for grip in self.side_grips:
+                grip.hide()
+            for grip in self.corner_grips:
+                grip.hide()
+            self.setContentsMargins(0, 0, 0, 0)
+            return
 
+        for grip in self.side_grips:
+            grip.show()
+        for grip in self.corner_grips:
+            grip.show()
         self.setContentsMargins(*[self.gripSize] * 4)    # set the layout margins
 
         out_rect = self.rect()
@@ -159,6 +177,9 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.updateGrips()
+        if self.windowState() not in (Qt.WindowState.WindowMaximized, Qt.WindowState.WindowFullScreen):
+            self._normal_size = self.size()
+            self._normal_geometry = QRect(self.geometry().x(), self.geometry().y(), self.size().width(), self.size().height())
 
 
     def setTitleBar(self, widget:QWidget):
@@ -197,3 +218,11 @@ class MainWindow(QMainWindow):
         self.status_bar = widget
         self.status_bar.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         self.main_layout.addWidget(self.status_bar)
+
+    @property
+    def getNormalSize(self) -> QRect:
+        return self._normal_size
+    
+    @property
+    def getNormalGeometry(self) -> QRect:
+        return self._normal_geometry

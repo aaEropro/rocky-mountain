@@ -1,0 +1,14 @@
+{
+    "split_001.gmd": {
+        "position": 1,
+        "state": 1
+    },
+    "split_002.gmd": {
+        "position": -1,
+        "state": 0
+    },
+    "split_003.gmd": {
+        "position": -1,
+        "state": -1
+    }
+}

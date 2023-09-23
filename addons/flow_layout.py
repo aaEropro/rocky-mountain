@@ -92,7 +92,8 @@ class FlowLayout(QLayout):
             x = nextX
             lineHeight = max(lineHeight, item.sizeHint().height())
 
-        if self.center_items and lineItems and totalLines > 1:
+        #  and totalLines > 1
+        if self.center_items and lineItems:
             excessSpace = effectiveRect.right() - (x - self.spacing())
             offsetX = excessSpace / 2
             for lineItem in lineItems:

@@ -2,118 +2,114 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 import sys
-from editor.main import EditorWindow
-from explorer.main import ExplorerWindow
 import os
-from configobj import ConfigObj
-from addons.main_window import MainWindow
-from addons.title_bar import TitleBar
-from settings import Settings
 
 import ctypes
-myappid = u'tryhardCo.stupidAsAlways.RockyMountain.0'    # arbitrary string
+myappid = u'tryhardCo.stupidAsAlways.RockyMountain.0.2'    # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
-VERSION = '0.1.3'
+from src.editor.main import EditorWindow
+from src.explorer.main import ExplorerWindow
+from addons.main_window import MainWindow
+from addons.title_bar import TitleBar
+from src.settings.ui.settings_ui import Settings
+from src.settings.data.settings_master import SettingsMasterStn
+from src.explorer.data.library_master import LibraryMasterStn
+
+
+VERSION = '0.2.0'
+
+DIR = os.path.dirname(os.path.abspath(__import__('__main__').__file__))
 
 
 class MainWindow(MainWindow):
     def __init__(self):
         super().__init__()
 
-        self.current_page = None
-        self.settings = {
-            'cover_constraint': [225, 225] 
-        }
+        self.atCreation()
 
-        with open(os.path.join('editor', 'setup_files', 'editor_window_dark_mode.css')) as file:
+        self.current_widget = None
+
+        with open(os.path.join(DIR, 'dark_mode.css')) as file:
             self.editor_window_dark_mode_styling = file.read()
         self.setStyleSheet(self.editor_window_dark_mode_styling)
 
         self.title_bar = TitleBar()
         self.title_bar.setWindowInstance(self)
-        self.title_bar.setTitle('window1')
+        self.title_bar.setTitle(f'Rocky Mountain - {VERSION}')
         self.title_bar.settings_button.clicked.connect(self.createSettingsPage)
+        self.title_bar.home_button.clicked.connect(self.goHome)
         self.setTitleBar(self.title_bar)
 
         self.central_widget = QStackedWidget(self)
         self.central_widget.setContentsMargins(0, 0, 0, 0)
         self.setCentralWidget(self.central_widget)
         
-        self.explorer_window = ExplorerWindow(self.loadBook)
+        self.explorer_window = ExplorerWindow()
+        self.explorer_window.clicked.connect(self.loadBook)
         self.central_widget.addWidget(self.explorer_window)
-        self.current_page = self.explorer_window
+        self.current_widget = self.explorer_window
 
+
+    def loadBook(self, bookname:str) -> None:
         self.editor_window = EditorWindow()
         self.central_widget.addWidget(self.editor_window)
+        self.editor_window.activate(os.path.join(SettingsMasterStn().getSpecific('library-path'), bookname))
 
-        self.loadSetupData()
-
-    
-    def loadBook(self, bookname:str) -> None:
-        self.editor_window.activate(os.path.join(self.explorer_window.library_master.getLibraryPath(), bookname))
         self.central_widget.setCurrentWidget(self.editor_window)
-        self.current_page = self.editor_window
+        self.current_widget = self.editor_window
+
         author = self.explorer_window.library_master.getBookAuthor(bookname[:-4])
         title = self.explorer_window.library_master.getBookTitle(bookname[:-4])
         self.title_bar.setTitle(f'{author[0]} {author[1]}: {title}')
 
 
-    def closeEvent(self, event: QCloseEvent) -> None:
-        self.editor_window.closeEventHandle()
-
-        window_size = self.size()        # get window size
-        window_position = self.pos()     # get window position
-        setup = ConfigObj(os.path.join('editor', 'setup_files', 'setup.ini'))
-        setup['window']['resolution'] = (window_size.width(), window_size.height())
-        setup['window']['position'] = (window_position.x(), window_position.y())
-        setup.write()
-
-        return super().closeEvent(event)
-    
-
-    def loadSetupData(self):
-        setup = ConfigObj(os.path.join('editor', 'setup_files', 'setup.ini'))
-        window_size = list(int(x) for x in setup['window']['resolution'])    # convert the str values to int
-        window_position = list(int(x) for x in setup['window']['position'])
-
-        if window_position[0] < 0: window_position[0] = 0    # check the window position to not be outside the screen
-        if window_position[1] < 0: window_position[1] = 0
-
-        self.resize(window_size[0], window_size[1])    # resize the window
-        self.move(window_position[0], window_position[1])    # move the window to the desired location
-
-
 ################################## SETTINGS #######################################################
     def createSettingsPage(self):
-        settings_page = Settings(settings=self.settings)
+        settings_page = Settings()
         settings_page.exit_pipeline.connect(self.exitSettingsPage)
         self.central_widget.addWidget(settings_page)
         self.central_widget.setCurrentWidget(settings_page)
 
 
-    def exitSettingsPage(self, settings_instance:QWidget, type:str, data:object):
+    def exitSettingsPage(self, settings_instance:QWidget):
         self.central_widget.removeWidget(settings_instance)
-        self.central_widget.setCurrentWidget(self.current_page)
+        self.central_widget.setCurrentWidget(self.current_widget)
         settings_instance.close()
         settings_instance.deleteLater()
-        if type == 'save':
-            self.processChanges(data)
+
+################################## HOME ###########################################################
+    def goHome(self):
+        self.editor_window.close()
+        self.editor_window.deleteLater()
+        self.title_bar.setTitle(f'Rocky Mountain - {VERSION}')
+        self.current_widget = self.explorer_window
+        self.central_widget.setCurrentWidget(self.explorer_window)
 
 
-    def processChanges(self, data:dict):
-        print('dda', data, self.settings)
-        # for item in self.settings.keys():
-        #     print(item)
-        #     old_setting = self.settings[item]
-        #     new_setting = data.get(item, '')
-        #     print(old_setting, new_setting)
-        #     if new_setting != old_setting:
-        #         print('new')
-        #         self.settings[item] = new_setting
-        #         if item == 'cover_constraint':
-        #             print(self.settings[item])
-        #             self.explorer_window.setCoversSizeConstraints(self.settings['cover_constraint'])
+##################################  #####################################################
+    def atCreation(self):
+        window_width, window_height = SettingsMasterStn().getSpecific('window-resolution')
+        window_pos_x, window_pos_y = SettingsMasterStn().getSpecific('window-position')
+        window_width = int(window_width); window_height = int(window_height)
+        window_pos_x = int(window_pos_x); window_pos_y = int(window_pos_y)
+
+        if window_pos_x < 0 or window_pos_x >= 1920: window_pos_x = 0    # check the window position to not be outside the screen
+        if window_pos_y < 0 or window_pos_y >= 1080: window_pos_y = 0
+
+        self.resize(window_width, window_height)    # resize the window
+        self.move(window_pos_x, window_pos_y)    # move the window to the desired location
+
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        window_size = (self.getNormalSize.width(), self.getNormalSize.height())        # get window size
+        window_position = (self.geometry().x(), self.geometry().y())     # get window position
+        
+        SettingsMasterStn().setSpecific(topic='window-resolution', value=window_size)
+        SettingsMasterStn().setSpecific(topic='window-position', value=window_position)
+
+        return super().closeEvent(event)
+
 
 
 
@@ -121,7 +117,7 @@ class MainWindow(MainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     instance = MainWindow()
-    icon = QIcon(os.path.join('logos', 'rm_logo.ico'))
+    icon = QIcon(os.path.join('assets', 'logos', 'rm_logo.ico'))
     app.setWindowIcon(icon)
     instance.show()
     sys.exit(app.exec())

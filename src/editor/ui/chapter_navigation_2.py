@@ -3,25 +3,35 @@ from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget, QHBoxLayout, Q
 from PySide6.QtCore import Signal
 
 
+
 ################################## ITEMS ##########################################################
 class BaseItem(QWidget):
     open_item_in_editor = Signal(str)
     removeSignal = Signal(object)
 
-    def __init__(self, name):
+    def __init__(self, data:list) -> None:
         super().__init__()
         self.master_layout = QHBoxLayout(self)
 
-        self.label = QLabel(name)
+        self.text = data[0]
+        self.name = data[1]
+
+        self.label = QLabel(f'{self.text} -- {self.name}')
         self.master_layout.addWidget(self.label)
 
-    def getText(self):
-        return self.label.text()
+    def getText(self) -> str:
+        return self.text
+    
+    def getFileName(self) -> str:
+        return self.name
+    
+    def getData(self) -> list[str]:
+        return [self.text, self.name]
 
-    def openInEditor(self):
-        self.open_item_in_editor.emit(self.label.text())
+    def openInEditor(self) -> None:
+        self.open_item_in_editor.emit(self.getFileName())
 
-    def deleteItem(self):
+    def deleteItem(self) -> None:
         self.removeSignal.emit(self)
 
 
@@ -67,33 +77,49 @@ class BaseList(QListWidget):
         super().__init__()
         self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
 
-    def addItemWidgets(self, names:list):
+    def addItemWidgets(self, names:list) -> None:
         ''' add a series of objects. `names` is a list containing the text displayed for each item. '''
         for item in names:
             self.addItemWidget(item)
 
-    def addItemWidget(self, name):
+    def addItemWidget(self, name) -> None:
         ''' placeholder function. needs to be overidden. '''
         pass
 
-    def scrapItem(self, obj:ItemInList):
+    def scrapItem(self, obj:ItemInList) -> None:
         ''' removes the item `obj` from the list. '''
         for index in range(self.count()):
             if self.itemWidget(self.item(index)) == obj:
                 self.takeItem(index)
                 break
 
+    def getItemsData(self) -> list[list[str]]:
+        ''' returns a list containing the data ([text, filename]) of items in the order they are shown. '''
+        items_data = []
+        for index in range(self.count()):
+            widget:BaseItem = self.itemWidget(self.item(index))
+            if widget:
+                items_data.append(widget.getData())
+        return items_data
+    
+    def getItemsFilenames(self) -> list[str]:
+        ''' returns a list containing the filenames of items in the order they are shown. '''
+        items_filenames = []
+        for index in range(self.count()):
+            widget:BaseItem = self.itemWidget(self.item(index))
+            if widget:
+                items_filenames.append(widget.getFileName())
+        return items_filenames
 
 class InOrder(BaseList):
-    moveToOutOrderSignal = Signal(str)
+    moveToOutOrderSignal = Signal(list)  # Signal to send list data
 
     def __init__(self):
         super().__init__()
 
-    def addItemWidget(self, name: str):
-        ''' add one object. `name` is the text displayed. '''
+    def addItemWidget(self, data: list):  # Now accepting a list data
         item = QListWidgetItem(self)
-        custom_widget = ItemInList(name)
+        custom_widget = ItemInList(data)  # Sending list data to the widget
         custom_widget.removeSignal.connect(self.removeItem)
         custom_widget.open_item_in_editor.connect(self.open_item_in_editor.emit)
         item.setSizeHint(custom_widget.sizeHint())
@@ -101,21 +127,19 @@ class InOrder(BaseList):
         self.setItemWidget(item, custom_widget)
 
     def removeItem(self, obj: ItemInList):
-        ''' sends the item text through `moveToOutOrderSignal` and removes the item from list. '''
-        item_text = obj.getText()
+        data = obj.getData()  # Fetch the list data
         self.scrapItem(obj)
-        self.moveToOutOrderSignal.emit(item_text)
+        self.moveToOutOrderSignal.emit(data)  # Emitting list data
 
 class OutOrder(BaseList):
-    restore_item = Signal(str)
+    restore_item = Signal(list)  # Signal to send list data
 
     def __init__(self):
         super().__init__()
 
-    def addItemWidget(self, name: str):
-        ''' add one object. `name` is the text displayed. '''
+    def addItemWidget(self, data: list):  # Now accepting a list data
         item = QListWidgetItem(self)
-        custom_widget = ItemOutList(name)
+        custom_widget = ItemOutList(data)  # Sending list data to the widget
         custom_widget.restoreSignal.connect(self.restoreItem)
         custom_widget.removeSignal.connect(self.scrapItem)
         custom_widget.open_item_in_editor.connect(self.open_item_in_editor.emit)
@@ -124,21 +148,30 @@ class OutOrder(BaseList):
         self.setItemWidget(item, custom_widget)
 
     def restoreItem(self, obj: ItemOutList):
-        ''' sends the item text through `restore_item` and removes the item from list. '''
-        item_text = obj.getText()
+        data = obj.getData()  # Fetch the list data
         self.scrapItem(obj)
-        self.restore_item.emit(item_text)
+        self.restore_item.emit(data)  # Emitting list data
 
 ################################## MAIN ###########################################################
 class ChapterNavigation(QWidget):
+    on_exit = Signal(object, list, list, list, object)
+
+    def instanciate(self) -> None:
+        self.all_items_filenames = []
+        self.opened = None
 
     def __init__(self, parent:QWidget|None=None) -> None:
-        super().__init__(parent)
+        self.instanciate()
 
+        super().__init__(parent)
         self.main_layout = QVBoxLayout(self)
 
+        self.exit_btn = QPushButton(self)
+        self.exit_btn.setText('exit')
+        self.exit_btn.clicked.connect(self.exitNavigation)
+        self.main_layout.addWidget(self.exit_btn)
+
         self.inorder_widget = InOrder()
-        self.inorder_widget.addItemWidgets(['Item 1', 'Item 2', 'Item 3', 'Item 4'])
         self.inorder_widget.open_item_in_editor.connect(self.openInEditor)
         self.main_layout.addWidget(self.inorder_widget)
 
@@ -148,12 +181,40 @@ class ChapterNavigation(QWidget):
         self.outorder_widget.restore_item.connect(self.inorder_widget.addItemWidget)
         self.main_layout.addWidget(self.outorder_widget)
 
-    def openInEditor(self, text):
-        print(f'Opened in editor {text}')
+    def loadChapters(self, listed:list, unlisted:list):
+        for item in listed+unlisted:
+            self.all_items_filenames.append(item[1])
+
+        self.inorder_widget.addItemWidgets(listed)
+        self.outorder_widget.addItemWidgets(unlisted)
+
+    def openInEditor(self, filename):
+        print(f'Opened in editor {filename}')
+        self.opened = filename
+        self.exitNavigation()
+
+    def exitNavigation(self):
+        inorder_items = self.inorder_widget.getItemsFilenames()
+        outorder_items = self.outorder_widget.getItemsFilenames()
+        deleted_items = []
+        for item in self.all_items_filenames:
+            if (not item in inorder_items) and (not item in outorder_items):
+                deleted_items.append(item)
+
+        self.on_exit.emit(self, inorder_items, outorder_items, deleted_items, self.opened)
+                
 
 
 if __name__ == '__main__':
+    def ex(obj, inorder, outorder, deleted):
+        print('in order:', inorder)
+        print('out order:', outorder)
+        print('deleted:', deleted)
+        sys.exit()
+
     app = QApplication(sys.argv)
     instamce = ChapterNavigation()
+    instamce.loadChapters([['prologue', 'split_001.gmd'], ['chapter 1', 'split_002.gmd'], ['chapter 2', 'split_003.gmd'], ['chapter 3', 'split_004.gmd'], ['epilogue', 'split_005.gmd']], [])
+    instamce.on_exit.connect(ex)
     instamce.show()
     app.exec()
