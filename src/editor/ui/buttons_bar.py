@@ -41,9 +41,6 @@ class ButtonsBar(QWidget):
         previous_icon = QPixmap(os.path.join(DIR, 'assets', 'icons', 'previous.png'))
         next_icon = QPixmap(os.path.join(DIR, 'assets', 'icons', 'next.png'))
 
-        previous_icon = QPixmap(r'C:\Users\Jovanni\Documents\GitHub\rocky-mountain\assets\icons\previous.png')
-        next_icon = QPixmap(r'C:\Users\Jovanni\Documents\GitHub\rocky-mountain\assets\icons\next.png')
-
         previous_icon = colorizeImage(previous_icon, QColor(209, 209, 209))
         next_icon = colorizeImage(next_icon, QColor(209, 209, 209))
 

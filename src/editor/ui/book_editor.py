@@ -228,12 +228,6 @@ class BookEditor(QTextEdit):
 
 
 ################################## EVENTS #########################################################
-    def mouseDoubleClickEvent(self, event:QEvent):
-        self.presence_detection_singnal.emit()
-        cursor = self.cursorForPosition(event.pos())    # get cursor at mouse click position
-        self.setTextCursor(cursor)    # update the cursor position
-        self.processWord(event)
-        return True
 
     def eventFilter(self, source, event):    # filter for clickes
         ''' add custome behaviour for clickes. '''
